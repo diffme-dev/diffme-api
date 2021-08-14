@@ -2,12 +2,19 @@ package http
 
 import (
 	domain "diffme.dev/diffme-api/modules/snapshots"
+	"diffme.dev/diffme-api/modules/snapshots/services"
+	"github.com/RichardKnop/machinery/v1"
 	valid "github.com/asaskevich/govalidator"
 	"github.com/gofiber/fiber/v2"
-	"log"
 )
 
-func (e *snapshotController) GetSnapshotByID(c *fiber.Ctx) error {
+type SnapshotController struct {
+	snapshotRepo     domain.SnapshotRepo
+	snapshotUseCases domain.SnapshotUseCases
+	taskserver       machinery.Server
+}
+
+func (e *SnapshotController) GetSnapshotByID(c *fiber.Ctx) error {
 	snapshotID := c.Params("id")
 
 	println("snapshot ID: ", snapshotID)
@@ -21,7 +28,7 @@ func (e *snapshotController) GetSnapshotByID(c *fiber.Ctx) error {
 	return c.JSON(data)
 }
 
-func (e *snapshotController) CreateSnapshot(c *fiber.Ctx) error {
+func (e *SnapshotController) CreateSnapshot(c *fiber.Ctx) error {
 
 	snapshotParams := new(domain.CreateSnapshotParams)
 
@@ -35,11 +42,11 @@ func (e *snapshotController) CreateSnapshot(c *fiber.Ctx) error {
 		return err
 	}
 
+	lastSnapshot, err := e.snapshotRepo.FindMostRecentByReference(snapshotParams.ReferenceID)
+
 	snapshot, err := e.snapshotRepo.CreateSnapshot(*snapshotParams)
 
-	// TODO: fire off previous and the current to kafka to process and store
-	// the diffs
-	log.Printf("Snapshot: %+v", snapshot)
+	services.SnapshotCreated(&e.taskserver, lastSnapshot, snapshot)
 
 	return c.JSON(snapshot)
 }

@@ -2,20 +2,18 @@ package http
 
 import (
 	domain "diffme.dev/diffme-api/modules/snapshots"
+	"github.com/RichardKnop/machinery/v1"
 	"github.com/gofiber/fiber/v2"
 )
 
-type snapshotController struct {
-	snapshotRepo     domain.SnapshotRepo
-	snapshotUseCases domain.SnapshotUseCases
-}
-
-func SnapshotController(f fiber.Router, snapshotRepo domain.SnapshotRepo, snapshotUseCases domain.SnapshotUseCases) {
+func SnapshotRoutes(f fiber.Router, snapshotRepo domain.SnapshotRepo, snapshotUseCases domain.SnapshotUseCases, taskserver *machinery.Server) {
 	snapshots := f.Group("/snapshots")
 
-	controller := &snapshotController{
-		snapshotRepo,
-		snapshotUseCases,
+	// If don't pass in members it is like calling stuff on nil/null
+	controller := &SnapshotController{
+		snapshotRepo:     snapshotRepo,
+		snapshotUseCases: snapshotUseCases,
+		taskserver:       *taskserver,
 	}
 
 	snapshots.Get("/:id", controller.GetSnapshotByID)
