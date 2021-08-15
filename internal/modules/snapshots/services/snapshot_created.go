@@ -2,7 +2,7 @@ package services
 
 import (
 	"diffme.dev/diffme-api/cmd/workers"
-	"diffme.dev/diffme-api/internal/infra"
+	"diffme.dev/diffme-api/internal/core/infra"
 	"diffme.dev/diffme-api/internal/modules/snapshots"
 	"encoding/json"
 	"github.com/hibiken/asynq"

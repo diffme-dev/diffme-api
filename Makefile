@@ -21,6 +21,9 @@ docker:
 run:
 	docker-compose up --build -d
 
+start_container:
+	docker build --tag server ./deployments/Dockerfile.server && docker run server
+
 stop:
 	docker-compose down
 

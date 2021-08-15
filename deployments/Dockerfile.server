@@ -1,0 +1,17 @@
+FROM golang:1.16-alpine
+
+WORKDIR /app
+
+# download dependencies
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
+
+# copy all source code
+COPY *.go ./
+
+EXPOSE 3001
+
+RUN go build -o ./server
+
+CMD [ "/server" ]

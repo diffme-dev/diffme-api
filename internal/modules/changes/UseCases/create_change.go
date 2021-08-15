@@ -2,6 +2,7 @@ package UseCases
 
 import (
 	"diffme.dev/diffme-api/internal/modules/changes"
+	"diffme.dev/diffme-api/internal/modules/changes/services"
 	"encoding/json"
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/google/uuid"
@@ -27,7 +28,7 @@ func (r *Result) UnmarshalJSON(p []byte) error {
 	return nil
 }
 
-func (a *ChangeUseCases) CreateChange(oldSnapshot []byte, newSnapshot []byte) ([]*domain.Change, error) {
+func (a *ChangeUseCases) CreateChange(oldSnapshot []byte, newSnapshot []byte) ([]domain.Change, error) {
 
 	changeSetID := "change_" + uuid.New().String()
 
@@ -50,7 +51,7 @@ func (a *ChangeUseCases) CreateChange(oldSnapshot []byte, newSnapshot []byte) ([
 		log.Fatal(err)
 	}
 
-	changes := make([]*domain.Change, len(r.Diffs))
+	changes := make([]domain.Change, len(r.Diffs))
 
 	for _, diff := range r.Diffs {
 		// Get the author's id
@@ -61,10 +62,21 @@ func (a *ChangeUseCases) CreateChange(oldSnapshot []byte, newSnapshot []byte) ([
 			Diffs:       diffByte,
 		}
 
-		changes = append(changes, &change)
+		changes = append(changes, change)
+	}
+
+	// TODO: save chages
+
+	changes, err = a.changeRepo.CreateMultiple(changes)
+
+	if err != nil {
+		return nil, err
 	}
 
 	// fire off event to index with elastic search...
+	for _, change := range changes {
+		services.ChangeCreated(change)
+	}
 
 	return changes, nil
 }

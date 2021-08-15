@@ -33,12 +33,21 @@ func NewMongoChangeRepo(DB *bongo.Connection) domain.ChangeRepository {
 	return &MongoChangeRepo{DB: DB}
 }
 
-func (m *MongoChangeRepo) _transformToDomain(doc ChangeModel) domain.Change {
+func (m *MongoChangeRepo) toDomain(doc ChangeModel) domain.Change {
 	return domain.Change{
 		ID:        doc.ID,
 		Editor:    doc.Editor,
 		UpdatedAt: doc.UpdatedAt,
 		CreatedAt: doc.CreatedAt,
+	}
+}
+
+func (m *MongoChangeRepo) toPersistence(change domain.Change) ChangeModel {
+	return ChangeModel{
+		ID:        change.ID,
+		Editor:    change.Editor,
+		UpdatedAt: change.UpdatedAt,
+		CreatedAt: change.CreatedAt,
 	}
 }
 
@@ -48,23 +57,41 @@ func (m *MongoChangeRepo) FindByID(id string) (snapshot domain.Change, err error
 
 	err = m.DB.Collection(modelName).FindById(objectID, changeDoc)
 
-	return m._transformToDomain(*changeDoc), err
+	return m.toDomain(*changeDoc), err
 
 }
 
 func (m *MongoChangeRepo) Create(change domain.Change) (res domain.Change, err error) {
 
-	changeDoc := &ChangeModel{
-		ID:                 change.ID,
-		ReferenceID:        change.ReferenceID,
-		ChangeSetID:        change.ChangeSetID,
-		Editor:             change.Editor,
-		Metadata:           change.Metadata,
-		Diffs:              change.Diffs,
-		PreviousSnapshotID: change.PreviousSnapshotID,
+	changeDoc := m.toPersistence(change)
+
+	err = m.DB.Collection(modelName).Save(&changeDoc)
+
+	return m.toDomain(changeDoc), err
+}
+
+func (m *MongoChangeRepo) CreateMultiple(changes []domain.Change) (res []domain.Change, err error) {
+
+	changeDocs := make([]ChangeModel, len(changes))
+
+	for _, change := range changes {
+		changeDocs = append(changeDocs, m.toPersistence(change))
 	}
 
-	err = m.DB.Collection(modelName).Save(changeDoc)
+	session := m.DB.Session
 
-	return m._transformToDomain(*changeDoc), err
+	err = session.DB(m.DB.Config.Database).C(modelName).Insert(changeDocs)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// transform back
+	newChanges := make([]domain.Change, len(changeDocs))
+
+	for _, changeDoc := range changeDocs {
+		newChanges = append(newChanges, m.toDomain(changeDoc))
+	}
+
+	return newChanges, err
 }

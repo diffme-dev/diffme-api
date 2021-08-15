@@ -1,7 +1,7 @@
 package server
 
 import (
-	Infra "diffme.dev/diffme-api/internal/infra"
+	"diffme.dev/diffme-api/internal/core/infra"
 	ChangeDomain "diffme.dev/diffme-api/internal/modules/changes"
 	ChangeUseCases "diffme.dev/diffme-api/internal/modules/changes/UseCases"
 	ChangeElastic "diffme.dev/diffme-api/internal/modules/changes/infra/elasticsearch"
@@ -32,9 +32,9 @@ func StartServer() {
 	v1 := app.Group("/v1")
 
 	// infra connections
-	mongoClient, err := Infra.NewMongoConnection()
+	mongoClient, err := infra.NewMongoConnection()
 	//redisClient, err := Infra.NewRedisClient()
-	elasticClient, err := Infra.NewElasticSearch()
+	elasticClient, err := infra.NewElasticSearch()
 	lz4Compression := compression.NewLZ4Compression()
 
 	if err != nil {

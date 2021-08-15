@@ -2,25 +2,26 @@ package asynq
 
 import (
 	"context"
+	domain "diffme.dev/diffme-api/internal/modules/changes"
 	"encoding/json"
 	"fmt"
 	"github.com/hibiken/asynq"
-	"log"
 )
 
-type EmailDeliveryPayloadd struct {
-	UserID     int
-	TemplateID string
+type ChangeCreatedPayload struct {
+	change domain.Change
 }
 
-func CreateSearchableChangeHandler(ctx context.Context, t *asynq.Task) error {
-	var p EmailDeliveryPayloadd
+func (e *ChangeAsynqSurface) CreateSearchableChangeHandler(ctx context.Context, t *asynq.Task) error {
+	var payload ChangeCreatedPayload
 
-	if err := json.Unmarshal(t.Payload(), &p); err != nil {
+	err := json.Unmarshal(t.Payload(), &payload)
+
+	if err != nil {
 		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
 	}
 
-	log.Printf("Sending Email to User: user_id=%d, template_id=%s", p.UserID, p.TemplateID)
+	_, err = e.changeUseCases.IndexSearchableChange(payload.change)
 
-	return nil
+	return err
 }

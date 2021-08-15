@@ -17,17 +17,19 @@ type Change struct {
 	CreatedAt          time.Time `json:"created_at"`
 }
 
-type ChangeUseCases interface {
-	CreateChange(oldSnapshot []byte, newSnapshot []byte) ([]*Change, error)
-	SearchChange(query string) ([]Change, error)
-}
-
 type ChangeRepository interface {
 	FindByID(id string) (Change, error)
 	Create(change Change) (Change, error)
+	CreateMultiple(change []Change) ([]Change, error)
 }
 
 type SearchChangeRepository interface {
 	Query(query string) (Change, error)
 	Create(change Change) (Change, error)
+}
+
+type ChangeUseCases interface {
+	CreateChange(oldSnapshot []byte, newSnapshot []byte) ([]Change, error)
+	SearchChange(query string) ([]Change, error)
+	IndexSearchableChange(change Change) (Change, error)
 }

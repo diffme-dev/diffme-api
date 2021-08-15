@@ -5,11 +5,13 @@ import (
 )
 
 type ChangeUseCases struct {
-	changeRepo domain.ChangeRepository
+	changeRepo       domain.ChangeRepository
+	searchChangeRepo domain.SearchChangeRepository
 }
 
-func NewChangeUseCase(changeRepo domain.ChangeRepository) *ChangeUseCases {
+func NewChangeUseCase(changeRepo domain.ChangeRepository, searchChangeRepo domain.SearchChangeRepository) *ChangeUseCases {
 	return &ChangeUseCases{
-		changeRepo: changeRepo,
+		changeRepo:       changeRepo,
+		searchChangeRepo: searchChangeRepo,
 	}
 }
