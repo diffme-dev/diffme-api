@@ -3,7 +3,7 @@ version: "3.8"
 services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
-    container_name: elasticsearch_1
+    container_name: elasticsearch
     environment:
       - node.name=elasticsearch_1
       - cluster.name=es-docker-cluster
@@ -16,44 +16,28 @@ services:
       - data01:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
-    networks:
-      - elastic
-  server:
-    build:
-      context: ./
-      dockerfile: ./docker/Dockerfile.server
-      args:
-        # On Linux, you may need to update USER_UID and USER_GID below if not your local UID is not 1000.
-        USER_UID: 1000
-        USER_GID: 1000
-    env_file:
-      - .env
-    environment:
-      CLOUDAMQP_URL: amqp://rabbitmq
-      REDIS_URL: redis://redis
-      POSTGRES_HOST: mongo
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: docker
-      POSTGRES_PASSWORD: docker
-    command: npm run watch-dev
+
+  mongodb:
+    image: mongo:4.2.10
     ports:
-      - "5000:5000"
-    # NOTE: https://medium.com/@semur.nabiev/how-to-make-docker-compose-volumes-ignore-the-node-modules-directory-99f9ec224561
+      - "27017-27019:27017-27019"
+    environment:
+      MONGO_INITDB_DATABASE: diffme
     volumes:
-      # Bind local sources to remote volume, excluding node_modules. This is especially important
-      # when developing on Mac, but are running Linux in Docker (obviously).
-      - ./:/src
-      - /src/node_modules
-    links:
-      - mongo
-      - mongodb
-      - rabbitmq
-      - redis
-    depends_on:
-      - mongo
-      - rabbitmq
-      - redis
+      - mongodb_data:/data/db
+
+  redis:
+    image: redis:6-alpine
+    command: redis-server
+    ports:
+      - "6379:6379"
+    environment:
+      REDIS_REPLICATION_MODE: master
+    volumes:
+      - redis_data:/var/lib/redis
 
 volumes:
+  mongodb_data:
+  redis_data:
   data01:
     driver: local

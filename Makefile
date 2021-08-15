@@ -1,4 +1,7 @@
 BINARY=engine
+dev:
+	go test -v -cover -covermode=atomic ./...
+
 test:
 	go test -v -cover -covermode=atomic ./...
 

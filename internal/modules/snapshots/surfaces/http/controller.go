@@ -1,9 +1,8 @@
 package http
 
 import (
+	"diffme.dev/diffme-api/internal/core"
 	"diffme.dev/diffme-api/internal/modules/snapshots"
-	"github.com/RichardKnop/machinery/v1"
-	valid "github.com/asaskevich/govalidator"
 	"github.com/gofiber/fiber/v2"
 	"log"
 )
@@ -11,7 +10,6 @@ import (
 type SnapshotController struct {
 	snapshotRepo     domain.SnapshotRepo
 	snapshotUseCases domain.SnapshotUseCases
-	taskserver       machinery.Server
 }
 
 func (e *SnapshotController) GetSnapshotByID(c *fiber.Ctx) error {
@@ -36,10 +34,14 @@ func (e *SnapshotController) CreateSnapshot(c *fiber.Ctx) error {
 		return err
 	}
 
-	isValid, err := valid.ValidateStruct(snapshotParams)
+	log.Printf("snapshot: %+v", snapshotParams)
 
-	if !isValid {
-		return fiber.NewError(fiber.StatusUnprocessableEntity, err.Error())
+	errors := core.ValidateStruct(snapshotParams)
+
+	log.Printf("errors: %+v", errors)
+
+	if len(errors) > 0 {
+		return fiber.NewError(fiber.StatusUnprocessableEntity, "Invalid json.")
 	}
 
 	log.Printf("snapshot: %+v", snapshotParams)

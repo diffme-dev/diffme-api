@@ -1,5 +1,0 @@
-package machinery
-
-func Some() {
-
-}

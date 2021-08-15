@@ -19,6 +19,7 @@ type Change struct {
 
 type ChangeUseCases interface {
 	CreateChange(oldSnapshot []byte, newSnapshot []byte) ([]*Change, error)
+	SearchChange(query string) ([]Change, error)
 }
 
 type ChangeRepository interface {

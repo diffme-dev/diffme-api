@@ -27,7 +27,7 @@ type MongoSnapshotRepo struct {
 }
 
 func NewMongoSnapshotRepo(DB *bongo.Connection) domain.SnapshotRepo {
-	return &MongoSnapshotRepo{DB}
+	return &MongoSnapshotRepo{DB: DB}
 }
 
 func (m *MongoSnapshotRepo) _transformToDomain(doc SnapshotModel) domain.Snapshot {
@@ -94,7 +94,7 @@ func (m *MongoSnapshotRepo) Create(params domain.CreateSnapshotParams) (res doma
 		Data:        params.Data,
 		Metadata:    params.Metadata,
 		Editor:      params.Editor,
-		UpdatedAt:   time.Time{},
+		UpdatedAt:   time.Now(),
 		CreatedAt:   params.CreatedAt,
 	}
 

@@ -1,19 +1,18 @@
 package http
 
 import (
-	"diffme.dev/diffme-api/internal/modules/changes"
+	domain "diffme.dev/diffme-api/internal/modules/changes"
 	"github.com/gofiber/fiber/v2"
 )
 
-func ChangeRoutes(f fiber.Router, eventUseCases domain.ChangeUseCases) {
+func ChangeRoutes(f fiber.Router, changeUseCases domain.ChangeUseCases) {
 	eventRoutes := f.Group("/changes")
 
 	handler := &ChangeController{
-		eventUseCases,
+		changeUseCases: changeUseCases,
 	}
 
-	eventRoutes.Get("/", handler.GetEvents)
-	eventRoutes.Get("/search", handler.SearchEvents)
-	eventRoutes.Get("/:id", handler.GetEventById)
-	eventRoutes.Post("/", handler.CreateEvent)
+	eventRoutes.Get("/", handler.GetChanges)
+	eventRoutes.Get("/search", handler.SearchChanges)
+	eventRoutes.Get("/:id", handler.GetChangeByReferenceID)
 }

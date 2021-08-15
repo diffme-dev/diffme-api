@@ -12,18 +12,15 @@ import (
 	SnapshotMongo "diffme.dev/diffme-api/internal/modules/snapshots/infra/mongo"
 	SnapshotHTTP "diffme.dev/diffme-api/internal/modules/snapshots/surfaces/http"
 	"diffme.dev/diffme-api/internal/shared/compression"
-	"github.com/RichardKnop/machinery/v1"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"log"
 )
 
 type dependencies struct {
-	changeUseCases ChangeDomain.ChangeUseCases
-	// TODO: remove
+	changeUseCases   ChangeDomain.ChangeUseCases
 	snapshotRepo     SnapshotDomain.SnapshotRepo
 	snapshotUseCases SnapshotDomain.SnapshotUseCases
-	taskserver       machinery.Server
 }
 
 func StartServer() {
@@ -36,33 +33,29 @@ func StartServer() {
 
 	// infra connections
 	mongoClient, err := Infra.NewMongoConnection()
-	redisClient, err := Infra.NewRedisClient()
-	machineryClient, err := Infra.NewMachinery()
+	//redisClient, err := Infra.NewRedisClient()
 	elasticClient, err := Infra.NewElasticSearch()
+	lz4Compression := compression.NewLZ4Compression()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	println(redisClient)
-	println(machineryClient)
-
-	lz4Compression := compression.NewLZ4Compression()
-
 	searchChangeRepo := ChangeElastic.NewElasticSearchChangeRepo(elasticClient)
 	changeRepo := ChangeMongo.NewMongoChangeRepo(mongoClient)
 	snapshotRepo := SnapshotMongo.NewMongoSnapshotRepo(mongoClient)
 	changeUseCases := ChangeUseCases.NewChangeUseCase(changeRepo)
-	snapshotUseCases := SnapshotUseCases.NewSnapshotUseCases(snapshotRepo, machineryClient, lz4Compression)
+	snapshotUseCases := SnapshotUseCases.NewSnapshotUseCases(snapshotRepo, lz4Compression)
+
+	if searchChangeRepo != nil {
+
+	}
 
 	// TODO: use this
-	println(searchChangeRepo)
-
 	deps := dependencies{
 		changeUseCases:   changeUseCases,
 		snapshotRepo:     snapshotRepo,
 		snapshotUseCases: snapshotUseCases,
-		taskserver:       *machineryClient,
 	}
 
 	addRoutes(v1, deps)
@@ -80,5 +73,5 @@ func StartServer() {
 
 func addRoutes(route fiber.Router, deps dependencies) {
 	EventHTTP.ChangeRoutes(route, deps.changeUseCases)
-	SnapshotHTTP.SnapshotRoutes(route, deps.snapshotRepo, deps.snapshotUseCases, &deps.taskserver)
+	SnapshotHTTP.SnapshotRoutes(route, deps.snapshotRepo, deps.snapshotUseCases)
 }

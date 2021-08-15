@@ -10,13 +10,14 @@ func (u *SnapshotUseCases) CreateSnapshot(snapshotParams domain.CreateSnapshotPa
 
 	// Note: the ID on this is actually what we consider a reference id
 	lastSnapshot, err := u.snapshotRepo.FindMostRecentByReference(snapshotParams.ID)
-
 	snapshot, err := u.snapshotRepo.Create(snapshotParams)
+
+	snapshot.Editor = "fake_stuffffff"
 
 	log.Printf("last snapshot: %+v", lastSnapshot)
 	log.Printf("new snapshot: %+v", snapshot)
 
-	services.SnapshotCreated(u.taskserver, lastSnapshot, snapshot)
+	services.SnapshotCreated(&lastSnapshot, &snapshot)
 
 	return snapshot, err
 }

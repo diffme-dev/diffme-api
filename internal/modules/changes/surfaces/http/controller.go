@@ -11,41 +11,26 @@ type SomeStruct struct {
 }
 
 type ChangeController struct {
-	EventUseCase domain.ChangeUseCases
+	changeUseCases domain.ChangeUseCases
 }
 
-func (e *ChangeController) GetEvents(c *fiber.Ctx) error {
-	data := SomeStruct{
-		Name: "Grame",
-		Age:  20,
-	}
+func (e *ChangeController) GetChanges(c *fiber.Ctx) error {
 
-	return c.JSON(data)
+	e.changeUseCases.SearchChange("hi")
+
+	return c.JSON(&SomeStruct{})
 }
 
-func (e *ChangeController) SearchEvents(c *fiber.Ctx) error {
-	data := SomeStruct{
-		Name: "Grame",
-		Age:  20,
-	}
+func (e *ChangeController) SearchChanges(c *fiber.Ctx) error {
 
-	return c.JSON(data)
+	e.changeUseCases.SearchChange("hi")
+
+	return c.JSON(&SomeStruct{})
 }
 
-func (e *ChangeController) GetEventById(c *fiber.Ctx) error {
-	data := SomeStruct{
-		Name: "Grame",
-		Age:  20,
-	}
+func (e *ChangeController) GetChangeByReferenceID(c *fiber.Ctx) error {
 
-	return c.JSON(data)
-}
+	e.changeUseCases.SearchChange("hi")
 
-func (e *ChangeController) CreateEvent(c *fiber.Ctx) error {
-	data := SomeStruct{
-		Name: "Grame",
-		Age:  20,
-	}
-
-	return c.JSON(data)
+	return c.JSON(&SomeStruct{})
 }

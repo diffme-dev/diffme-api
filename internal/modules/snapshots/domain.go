@@ -15,11 +15,11 @@ type Snapshot struct {
 }
 
 type CreateSnapshotParams struct {
-	ID        string      `json:"id" valid:"required"`
-	Data      interface{} `json:"data" valid:"-"`
-	Editor    string      `json:"editor" valid:"required"`
-	Metadata  interface{} `json:"metadata" valid:"-"`
-	CreatedAt time.Time   `json:"created_at"  valid:"required"`
+	ID        string      `json:"id" validate:"required"`
+	Data      interface{} `json:"data" validate:"-"`
+	Editor    string      `json:"editor" validate:"required"`
+	Metadata  interface{} `json:"metadata" validate:"-"`
+	CreatedAt time.Time   `json:"created_at"  validate:"required"`
 }
 
 type SnapshotUseCases interface {

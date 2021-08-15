@@ -1,11 +1,12 @@
 package services
 
 import (
+	"diffme.dev/diffme-api/cmd/workers"
+	"diffme.dev/diffme-api/internal/infra"
 	"diffme.dev/diffme-api/internal/modules/snapshots"
-	"encoding/base64"
 	"encoding/json"
-	Machinery "github.com/RichardKnop/machinery/v1"
-	"github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/hibiken/asynq"
+	"log"
 )
 
 type SnapshotCreatedEvent struct {
@@ -13,32 +14,30 @@ type SnapshotCreatedEvent struct {
 	next     domain.Snapshot
 }
 
-func SnapshotCreated(taskserver *Machinery.Server, previous domain.Snapshot, next domain.Snapshot) {
+func SnapshotCreated(previous *domain.Snapshot, next *domain.Snapshot) {
+
+	client := infra.NewAsynqClient()
+
+	log.Printf("snapshot created: %+v", previous)
 
 	event := SnapshotCreatedEvent{
-		previous: previous,
-		next:     next,
+		previous: *previous,
+		next:     *next,
 	}
 
-	encodedJSON, err := json.Marshal(event)
+	log.Printf("snapshot created: %+v", event)
+
+	payload, err := json.Marshal(event)
 
 	if err != nil {
 		println("decode json failed")
 	}
 
-	encodedRequest := base64.StdEncoding.EncodeToString(encodedJSON)
+	log.Printf("Event: %+v", payload)
 
-	signature := &tasks.Signature{
-		Name: "SnapshotCreated",
-		Args: []tasks.Arg{
-			{
-				Type:  "string",
-				Value: encodedRequest,
-			},
-		},
-	}
+	task := asynq.NewTask(workers.SnapshotCreated, payload)
 
-	_, err = taskserver.SendTask(signature)
+	client.Enqueue(task)
 
 	if err != nil {
 		println(err)
