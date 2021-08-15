@@ -31,7 +31,7 @@ services:
     environment:
       CLOUDAMQP_URL: amqp://rabbitmq
       REDIS_URL: redis://redis
-      POSTGRES_HOST: postgres
+      POSTGRES_HOST: mongo
       POSTGRES_PORT: 5432
       POSTGRES_USER: docker
       POSTGRES_PASSWORD: docker
@@ -45,12 +45,12 @@ services:
       - ./:/src
       - /src/node_modules
     links:
-      - postgres
+      - mongo
       - mongodb
       - rabbitmq
       - redis
     depends_on:
-      - postgres
+      - mongo
       - rabbitmq
       - redis
 

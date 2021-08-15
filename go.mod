@@ -21,6 +21,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.3 // indirect
 	github.com/gofiber/fiber v1.14.6 // indirect
 	github.com/gofiber/fiber/v2 v2.16.0 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
@@ -40,6 +41,7 @@ require (
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
 	github.com/valyala/fasthttp v1.28.0 // indirect
+	github.com/wI2L/jsondiff v0.1.0 // indirect
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	go.etcd.io/bbolt v1.3.2 // indirect
 	go.mongodb.org/mongo-driver v1.7.1 // indirect
@@ -48,4 +50,5 @@ require (
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/resty.v1 v1.12.0 // indirect
 	gopkg.in/urfave/cli.v1 v1.20.0 // indirect
+	gorm.io/gorm v1.21.13 // indirect
 )

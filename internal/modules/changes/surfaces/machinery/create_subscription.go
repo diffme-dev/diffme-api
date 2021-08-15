@@ -1,0 +1,5 @@
+package machinery
+
+func Some() {
+
+}

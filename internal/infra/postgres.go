@@ -7,7 +7,7 @@ import (
 )
 
 func NewPostgresConnection() *sql.DB {
-	db, err := sql.Open("postgres", "string...")
+	db, err := sql.Open("mongo", "string...")
 
 	if err != nil {
 		log.Fatal(err)

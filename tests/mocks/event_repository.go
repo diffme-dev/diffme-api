@@ -2,7 +2,7 @@ package mocks
 
 import (
 	context "context"
-	domain "diffme.dev/diffme-api/modules/events"
+	"diffme.dev/diffme-api/internal/modules/changes"
 )
 import mock "github.com/stretchr/testify/mock"
 
@@ -12,15 +12,15 @@ type ArticleRepository struct {
 }
 
 // Fetch provides a mock function with given fields: ctx, cursor, num
-func (_m *ArticleRepository) Fetch(ctx context.Context, cursor string, num int64) ([]domain.Event, string, error) {
+func (_m *ArticleRepository) Fetch(ctx context.Context, cursor string, num int64) ([]domain.Change, string, error) {
 	ret := _m.Called(ctx, cursor, num)
 
-	var r0 []domain.Event
-	if rf, ok := ret.Get(0).(func(context.Context, string, int64) []domain.Event); ok {
+	var r0 []domain.Change
+	if rf, ok := ret.Get(0).(func(context.Context, string, int64) []domain.Change); ok {
 		r0 = rf(ctx, cursor, num)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]domain.Event)
+			r0 = ret.Get(0).([]domain.Change)
 		}
 	}
 
@@ -42,14 +42,14 @@ func (_m *ArticleRepository) Fetch(ctx context.Context, cursor string, num int64
 }
 
 // GetByID provides a mock function with given fields: ctx, id
-func (_m *ArticleRepository) GetByID(ctx context.Context, id int64) (domain.Event, error) {
+func (_m *ArticleRepository) GetByID(ctx context.Context, id int64) (domain.Change, error) {
 	ret := _m.Called(ctx, id)
 
-	var r0 domain.Event
-	if rf, ok := ret.Get(0).(func(context.Context, int64) domain.Event); ok {
+	var r0 domain.Change
+	if rf, ok := ret.Get(0).(func(context.Context, int64) domain.Change); ok {
 		r0 = rf(ctx, id)
 	} else {
-		r0 = ret.Get(0).(domain.Event)
+		r0 = ret.Get(0).(domain.Change)
 	}
 
 	var r1 error
