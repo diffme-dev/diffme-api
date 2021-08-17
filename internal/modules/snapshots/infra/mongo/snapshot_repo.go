@@ -2,7 +2,6 @@ package mongo
 
 import (
 	"diffme.dev/diffme-api/internal/modules/snapshots"
-	"fmt"
 	"github.com/go-bongo/bongo"
 	"gopkg.in/mgo.v2/bson"
 	"time"
@@ -99,7 +98,7 @@ func (m *SnapshotRepo) Create(params domain.CreateSnapshotParams) (res domain.Sn
 
 	err = m.DB.Collection(modelName).Save(snapshotDoc)
 
-	fmt.Printf("SNAP %s", m.toDomain(*snapshotDoc))
+	//fmt.Printf("SNAP %s", m.toDomain(*snapshotDoc))
 
 	return m.toDomain(*snapshotDoc), err
 }

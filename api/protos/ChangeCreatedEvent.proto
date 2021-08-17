@@ -1,0 +1,13 @@
+syntax="proto3";
+
+option go_package = "/protos";
+package main;
+
+
+message ChangeCreatedEvent {
+  string editor = 1;
+  string reference_id = 2;
+  string data = 3;
+  string metadata = 4;
+  string diff = 5;
+}

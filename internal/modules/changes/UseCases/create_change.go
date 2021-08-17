@@ -15,19 +15,16 @@ func (a *ChangeUseCases) CreateChange(oldSnapshot []byte, newSnapshot []byte) ([
 
 	changeSetID := "change_" + uuid.New().String()
 
-	println(changeSetID)
-
 	var previous SnapshotDomain.Snapshot
 	var next SnapshotDomain.Snapshot
 
 	err := json.Unmarshal(oldSnapshot, previous)
-
 	err = json.Unmarshal(newSnapshot, next)
 
 	//next.Data = map[string]interface{}{"name": "hello man"}
 
-	fmt.Printf("Previous Data %s", previous.Data)
-	fmt.Printf("Next Data %s", next.Data)
+	fmt.Printf("\nPrevious Data %s", previous)
+	fmt.Printf("\nNext Data %s", next.Data)
 
 	patch, err := jsondiff.Compare(previous.Data, next.Data)
 
@@ -35,7 +32,7 @@ func (a *ChangeUseCases) CreateChange(oldSnapshot []byte, newSnapshot []byte) ([
 		return nil, err
 	}
 
-	fmt.Printf("patch: %s", patch)
+	fmt.Printf("\nJSON Patch: %s", patch)
 
 	changes := make([]domain.Change, len(patch))
 

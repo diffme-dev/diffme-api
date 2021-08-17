@@ -89,17 +89,21 @@ func (m *ChangeRepo) Create(change domain.Change) (res domain.Change, err error)
 }
 
 func (m *ChangeRepo) CreateMultiple(changes []domain.Change) (res []domain.Change, err error) {
-	println("starting transaction")
 
 	changeDocs := make([]ChangeModel, len(changes))
 
 	for _, change := range changes {
 
-		_, err := m.Create(change)
+		changeDoc := m.toPersistence(change)
+
+		err := m.DB.Collection(modelName).Save(&changeDoc)
 
 		if err != nil {
 			println(err)
+			continue
 		}
+
+		changeDocs = append(changeDocs, changeDoc)
 	}
 
 	// transform back

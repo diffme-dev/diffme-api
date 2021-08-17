@@ -1,37 +1,35 @@
 package services
 
 import (
+	"diffme.dev/diffme-api/api/protos"
 	"diffme.dev/diffme-api/cmd/workers"
 	"diffme.dev/diffme-api/internal/core/infra"
 	"diffme.dev/diffme-api/internal/modules/snapshots"
 	"encoding/json"
+	"github.com/golang/protobuf/proto"
 	"github.com/hibiken/asynq"
-	"log"
 )
-
-type SnapshotCreatedEvent struct {
-	previous domain.Snapshot
-	next     domain.Snapshot
-}
 
 func SnapshotCreated(previous domain.Snapshot, next domain.Snapshot) {
 
 	client := infra.NewAsynqClient()
 
-	event := SnapshotCreatedEvent{
-		previous: previous,
-		next:     next,
+	nextData, _ := json.Marshal(next.Data)
+
+	person := &protos.SnapshotCreatedEvent{
+		Editor:      next.Editor,
+		Data:        string(nextData),
+		ReferenceId: next.ReferenceId,
+		Metadata:    "some-metadata",
 	}
 
-	payload, err := json.Marshal(event)
+	data, err := proto.Marshal(person)
 
-	if err != nil {
-		println("decode json failed")
+	if data != nil {
+		println(data)
 	}
 
-	log.Printf("Event: %s", payload)
-
-	task := asynq.NewTask(workers.SnapshotCreated, payload)
+	task := asynq.NewTask(workers.SnapshotCreated, data)
 
 	_, err = client.Enqueue(task)
 
