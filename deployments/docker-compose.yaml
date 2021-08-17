@@ -17,14 +17,58 @@ services:
     ports:
       - 9200:9200
 
-  mongodb:
-    image: mongo:4.2.10
-    ports:
-      - "27017-27019:27017-27019"
-    environment:
-      MONGO_INITDB_DATABASE: diffme
+  mongo-setup:
+    container_name: mongo-setup
+    image: mongo
+    restart: on-failure
+    networks:
+      default:
     volumes:
-      - mongodb_data:/data/db
+      - ./scripts:/scripts
+    entrypoint: [ "mongo_setup.sh" ] # Make sure this file exists (see below for the setup.sh)
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+  mongo1:
+    hostname: mongo1
+    container_name: localmongo1
+    image: mongo
+    expose:
+      - 27017
+    ports:
+      - 27017:27017
+    restart: always
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0", "--journal", "--dbpath", "/data/db", "--enableMajorityReadConcern", "false" ]
+    volumes:
+      - mongodb_data:/mongo/data1/data/db
+      - mongodb_data:/mongo/data1/config/data/configdb
+  mongo2:
+    hostname: mongo2
+    container_name: localmongo2
+    image: mongo
+    expose:
+      - 27017
+    ports:
+      - 27018:27017
+    restart: always
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0", "--journal", "--dbpath", "/data/db", "--enableMajorityReadConcern", "false" ]
+    volumes:
+      - mongodb_data:/mongo/data2/data/db # Note the data2, it must be different to the original set.
+      - mongodb_data:/mongo/data2/data/configdb
+  mongo3:
+    hostname: mongo3
+    container_name: localmongo3
+    image: mongo
+    expose:
+      - 27017
+    ports:
+      - 27019:27017
+    restart: always
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0", "--journal", "--dbpath", "/data/db", "--enableMajorityReadConcern", "false" ]
+    volumes:
+      - mongodb_data:/mongo/data3/data/db
+      - mongodb_data:/mongo/data3/data/configdb
 
   redis:
     image: redis:6-alpine
@@ -37,6 +81,7 @@ services:
       - redis_data:/var/lib/redis
 
 volumes:
+  db:
   mongodb_data:
   redis_data:
   data01:

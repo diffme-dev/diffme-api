@@ -5,21 +5,21 @@ import (
 )
 
 type Snapshot struct {
-	ID          string      `json:"id" omitempty`
-	ReferenceID string      `json:"reference_id" omitempty`
-	Data        interface{} `json:"data" omitempty`
-	Editor      string      `json:"editor" omitempty`
-	Metadata    interface{} `json:"metadata" omitempty`
-	UpdatedAt   time.Time   `json:"updated_at" omitempty`
-	CreatedAt   time.Time   `json:"created_at" omitempty`
+	Id          string                 `json:"id" omitempty`
+	ReferenceId string                 `json:"reference_id" omitempty`
+	Data        map[string]interface{} `json:"data" omitempty`
+	Editor      string                 `json:"editor" omitempty`
+	Metadata    map[string]interface{} `json:"metadata" omitempty`
+	UpdatedAt   time.Time              `json:"updated_at" omitempty`
+	CreatedAt   time.Time              `json:"created_at" omitempty`
 }
 
 type CreateSnapshotParams struct {
-	ID        string      `json:"id" validate:"required"`
-	Data      interface{} `json:"data" validate:"-"`
-	Editor    string      `json:"editor" validate:"required"`
-	Metadata  interface{} `json:"metadata" validate:"-"`
-	CreatedAt time.Time   `json:"created_at"  validate:"required"`
+	Id        string                 `json:"id" validate:"required"`
+	Data      map[string]interface{} `json:"data" validate:"-"`
+	Editor    string                 `json:"editor" validate:"required"`
+	Metadata  map[string]interface{} `json:"metadata" validate:"-"`
+	CreatedAt time.Time              `json:"created_at"  validate:"required"`
 }
 
 type SnapshotUseCases interface {

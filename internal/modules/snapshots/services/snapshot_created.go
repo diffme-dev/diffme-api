@@ -14,18 +14,14 @@ type SnapshotCreatedEvent struct {
 	next     domain.Snapshot
 }
 
-func SnapshotCreated(previous *domain.Snapshot, next *domain.Snapshot) {
+func SnapshotCreated(previous domain.Snapshot, next domain.Snapshot) {
 
 	client := infra.NewAsynqClient()
 
-	log.Printf("snapshot created: %+v", previous)
-
 	event := SnapshotCreatedEvent{
-		previous: *previous,
-		next:     *next,
+		previous: previous,
+		next:     next,
 	}
-
-	log.Printf("snapshot created: %+v", event)
 
 	payload, err := json.Marshal(event)
 
@@ -33,11 +29,11 @@ func SnapshotCreated(previous *domain.Snapshot, next *domain.Snapshot) {
 		println("decode json failed")
 	}
 
-	log.Printf("Event: %+v", payload)
+	log.Printf("Event: %s", payload)
 
 	task := asynq.NewTask(workers.SnapshotCreated, payload)
 
-	client.Enqueue(task)
+	_, err = client.Enqueue(task)
 
 	if err != nil {
 		println(err)

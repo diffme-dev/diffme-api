@@ -19,10 +19,10 @@ docker:
 	docker build -t go-clean-arch .
 
 run:
-	docker-compose up --build -d
+	docker compose up
 
 start_container:
-	docker build --tag server ./deployments/Dockerfile.server && docker run server
+	docker build --tag diffme-api ./deployments/Dockerfile.server && docker diffme-api
 
 stop:
 	docker-compose down

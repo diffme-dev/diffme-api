@@ -1,9 +1,15 @@
 package mongo
 
 import (
+	"context"
+	Infra "diffme.dev/diffme-api/internal/core/infra"
 	domain "diffme.dev/diffme-api/internal/modules/changes"
+	"fmt"
 	"github.com/go-bongo/bongo"
+	"github.com/wI2L/jsondiff"
+	"go.mongodb.org/mongo-driver/mongo"
 	"gopkg.in/mgo.v2/bson"
+	"log"
 	"time"
 )
 
@@ -11,47 +17,56 @@ var (
 	modelName = "changes"
 )
 
-type MongoChangeRepo struct {
+type ChangeRepo struct {
 	DB *bongo.Connection
 }
 
+type Diff jsondiff.Operation
+
 type ChangeModel struct {
 	bongo.DocumentBase `bson:",inline"`
-	ID                 string    `json:"id"`
-	ChangeSetID        string    `json:"change_set_id"`
-	ReferenceID        string    `json:"reference_id"`
-	PreviousSnapshotID string    `json:"previous_snapshot_id"`
-	CurrentSnapshotID  string    `json:"current_snapshot_id"`
-	Editor             string    `json:"id"`
-	Metadata           []byte    `json:"metadata"`
-	Diffs              []byte    `json:"diffs"`
-	UpdatedAt          time.Time `json:"updated_at"`
-	CreatedAt          time.Time `json:"created_at"`
+	ChangeSetId        string                 `bson:"change_set_id" json:"change_set_id"`
+	ReferenceId        string                 `bson:"reference_id" json:"reference_id"`
+	SnapshotId         string                 `bson:"snapshot_id" json:"snapshot_id"`
+	Editor             string                 `bson:"editor" json:"editor"`
+	Metadata           map[string]interface{} `bson:"metadata" json:"metadata"`
+	Diff               Diff                   `bson:"diff" json:"diff"`
+	UpdatedAt          time.Time              `bson:"updated_at" json:"updated_at"`
+	CreatedAt          time.Time              `bson:"created_at" json:"created_at"`
 }
 
 func NewMongoChangeRepo(DB *bongo.Connection) domain.ChangeRepository {
-	return &MongoChangeRepo{DB: DB}
+	return &ChangeRepo{DB: DB}
 }
 
-func (m *MongoChangeRepo) toDomain(doc ChangeModel) domain.Change {
+func (m *ChangeRepo) toDomain(doc ChangeModel) domain.Change {
 	return domain.Change{
-		ID:        doc.ID,
-		Editor:    doc.Editor,
-		UpdatedAt: doc.UpdatedAt,
-		CreatedAt: doc.CreatedAt,
+		Id:          doc.Id.String(),
+		ChangeSetId: doc.ChangeSetId,
+		ReferenceId: doc.ReferenceId,
+		SnapshotId:  doc.SnapshotId,
+		Editor:      doc.Editor,
+		Metadata:    doc.Metadata,
+		Diff:        domain.Diff(doc.Diff),
+		UpdatedAt:   doc.UpdatedAt,
+		CreatedAt:   doc.CreatedAt,
 	}
 }
 
-func (m *MongoChangeRepo) toPersistence(change domain.Change) ChangeModel {
+func (m *ChangeRepo) toPersistence(change domain.Change) ChangeModel {
 	return ChangeModel{
-		ID:        change.ID,
-		Editor:    change.Editor,
-		UpdatedAt: change.UpdatedAt,
-		CreatedAt: change.CreatedAt,
+		ChangeSetId: change.ChangeSetId,
+		ReferenceId: change.ReferenceId,
+		SnapshotId:  change.SnapshotId,
+		Editor:      change.Editor,
+		Metadata:    change.Metadata,
+		Diff:        Diff(change.Diff),
+		UpdatedAt:   change.UpdatedAt,
+		CreatedAt:   change.CreatedAt,
 	}
 }
 
-func (m *MongoChangeRepo) FindByID(id string) (snapshot domain.Change, err error) {
+func (m *ChangeRepo) FindByID(id string) (snapshot domain.Change, err error) {
 	objectID := bson.ObjectIdHex(id)
 	changeDoc := &ChangeModel{}
 
@@ -61,16 +76,44 @@ func (m *MongoChangeRepo) FindByID(id string) (snapshot domain.Change, err error
 
 }
 
-func (m *MongoChangeRepo) Create(change domain.Change) (res domain.Change, err error) {
-
+func (m *ChangeRepo) Create(change domain.Change) (res domain.Change, err error) {
 	changeDoc := m.toPersistence(change)
 
 	err = m.DB.Collection(modelName).Save(&changeDoc)
 
+	if err != nil {
+		fmt.Printf("error making change %s", err)
+	}
+
 	return m.toDomain(changeDoc), err
 }
 
-func (m *MongoChangeRepo) CreateMultiple(changes []domain.Change) (res []domain.Change, err error) {
+func (m *ChangeRepo) CreateMultiple(changes []domain.Change) (res []domain.Change, err error) {
+	println("starting transaction")
+
+	changeDocs := make([]ChangeModel, len(changes))
+
+	for _, change := range changes {
+
+		_, err := m.Create(change)
+
+		if err != nil {
+			println(err)
+		}
+	}
+
+	// transform back
+	newChanges := make([]domain.Change, len(changeDocs))
+
+	for _, changeDoc := range changeDocs {
+		newChanges = append(newChanges, m.toDomain(changeDoc))
+	}
+
+	return newChanges, err
+}
+
+func (m *ChangeRepo) CreateMultipleTxn(changes []domain.Change) (res []domain.Change, err error) {
+	println("starting transaction")
 
 	changeDocs := make([]ChangeModel, len(changes))
 
@@ -78,12 +121,42 @@ func (m *MongoChangeRepo) CreateMultiple(changes []domain.Change) (res []domain.
 		changeDocs = append(changeDocs, m.toPersistence(change))
 	}
 
-	session := m.DB.Session
+	client, err := Infra.NewMongoConnection()
+	changesCollection := client.Database("diffme").Collection(modelName)
+	session, err := client.StartSession()
 
-	err = session.DB(m.DB.Config.Database).C(modelName).Insert(changeDocs)
+	defer session.EndSession(context.Background())
+
+	err = mongo.WithSession(context.Background(), session, func(sessionContext mongo.SessionContext) error {
+		if err = session.StartTransaction(); err != nil {
+			return err
+		}
+
+		for _, doc := range changeDocs {
+			_, err := changesCollection.InsertOne(
+				sessionContext,
+				doc,
+			)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		if err = session.CommitTransaction(sessionContext); err != nil {
+			return err
+		}
+
+		return nil
+	})
 
 	if err != nil {
-		return nil, err
+		if abortErr := session.AbortTransaction(context.Background()); abortErr != nil {
+			log.Printf("error %s", abortErr)
+			//panic(abortErr)
+		}
+		log.Printf("error %s", err)
+		//panic(err)
 	}
 
 	// transform back

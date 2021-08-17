@@ -2,10 +2,9 @@ package workers
 
 import (
 	Infra "diffme.dev/diffme-api/internal/core/infra"
-	ChangeUseCases "diffme.dev/diffme-api/internal/modules/changes/UseCases"
-	"diffme.dev/diffme-api/internal/modules/changes/infra/elasticsearch"
-	ChangeMongo "diffme.dev/diffme-api/internal/modules/changes/infra/mongo"
+	ChangeDomain "diffme.dev/diffme-api/internal/modules/changes"
 	ChangeAsynq "diffme.dev/diffme-api/internal/modules/changes/surfaces/asynq"
+	SnapshotDomain "diffme.dev/diffme-api/internal/modules/snapshots"
 	"log"
 )
 
@@ -14,18 +13,33 @@ var (
 	ChangeCreated   = "ChangeCreated"
 )
 
-func StartWorkers() {
+type WorkerDependencies struct {
+	changeUseCases   ChangeDomain.ChangeUseCases
+	snapshotRepo     SnapshotDomain.SnapshotRepo
+	snapshotUseCases SnapshotDomain.SnapshotUseCases
+	searchChangeRepo ChangeDomain.SearchChangeRepository
+}
+
+func NewWorkerDependencies(
+	changeUseCases ChangeDomain.ChangeUseCases,
+	snapshotRepo SnapshotDomain.SnapshotRepo,
+	snapshotUseCases SnapshotDomain.SnapshotUseCases,
+	searchChangeRepo ChangeDomain.SearchChangeRepository,
+) WorkerDependencies {
+	return WorkerDependencies{
+		changeUseCases:   changeUseCases,
+		snapshotRepo:     snapshotRepo,
+		snapshotUseCases: snapshotUseCases,
+		searchChangeRepo: searchChangeRepo,
+	}
+}
+
+func StartWorkers(deps WorkerDependencies) {
 	println("[starting workers]")
 
 	server, mux := Infra.NewAsynqServer()
 
-	mongoClient, _ := Infra.NewMongoConnection()
-	elasticClient, _ := Infra.NewElasticSearch()
-	changeRepo := ChangeMongo.NewMongoChangeRepo(mongoClient)
-	searchChangeRepo := elasticsearch.NewElasticSearchChangeRepo(elasticClient)
-
-	changeUseCases := ChangeUseCases.NewChangeUseCase(changeRepo, searchChangeRepo)
-	changeAsynqSurface := ChangeAsynq.NewChangeAsnqSurface(changeUseCases)
+	changeAsynqSurface := ChangeAsynq.NewChangeAsnqSurface(deps.changeUseCases)
 
 	mux.HandleFunc(SnapshotCreated, changeAsynqSurface.CreateChangeHandler)
 	mux.HandleFunc(ChangeCreated, changeAsynqSurface.CreateSearchableChangeHandler)

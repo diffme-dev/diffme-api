@@ -1,20 +1,34 @@
 package domain
 
 import (
+	"github.com/wI2L/jsondiff"
 	"time"
 )
 
+type Diff jsondiff.Operation
+
 type Change struct {
-	ID                 string    `json:"id"`
-	ChangeSetID        string    `json:"change_set_id"`
-	ReferenceID        string    `json:"reference_id"`
-	PreviousSnapshotID string    `json:"previous_snapshot_id"`
-	CurrentSnapshotID  string    `json:"current_snapshot_id"`
-	Editor             string    `json:"id"`
-	Metadata           []byte    `json:"metadata"`
-	Diffs              []byte    `json:"diffs"`
-	UpdatedAt          time.Time `json:"updated_at"`
-	CreatedAt          time.Time `json:"created_at"`
+	Id          string                 `json:"id"`
+	ChangeSetId string                 `json:"change_set_id"`
+	ReferenceId string                 `json:"reference_id"`
+	SnapshotId  string                 `json:"current_snapshot_id"`
+	Editor      string                 `json:"id"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	Diff        Diff                   `json:"diff"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+	CreatedAt   time.Time              `json:"created_at"`
+}
+
+type SearchChange struct {
+	Id          string                 `json:"id"`
+	ChangeSetId string                 `json:"change_set_id"`
+	SnapshotId  string                 `json:"snapshot_id"`
+	ReferenceId string                 `json:"reference_id"`
+	Editor      string                 `json:"id"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	Diff        Diff                   `json:"diff"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+	CreatedAt   time.Time              `json:"created_at"`
 }
 
 type ChangeRepository interface {
@@ -24,12 +38,12 @@ type ChangeRepository interface {
 }
 
 type SearchChangeRepository interface {
-	Query(query string) (Change, error)
-	Create(change Change) (Change, error)
+	Query(match map[string]interface{}) ([]SearchChange, error)
+	Create(change SearchChange) (SearchChange, error)
 }
 
 type ChangeUseCases interface {
 	CreateChange(oldSnapshot []byte, newSnapshot []byte) ([]Change, error)
-	SearchChange(query string) ([]Change, error)
-	IndexSearchableChange(change Change) (Change, error)
+	SearchChange(query string) ([]SearchChange, error)
+	IndexSearchableChange(change Change) (SearchChange, error)
 }

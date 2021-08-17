@@ -5,32 +5,69 @@ import (
 	"context"
 	domain "diffme.dev/diffme-api/internal/modules/changes"
 	"encoding/json"
+	"fmt"
 	"github.com/elastic/go-elasticsearch"
+	"github.com/mitchellh/mapstructure"
+	"github.com/wI2L/jsondiff"
 	"log"
 	"strings"
 	"time"
 )
 
-type ElasticChangeSearchRepository struct {
+var (
+	changeIndex = "changes"
+)
+
+type ChangeSearchRepository struct {
 	client *elasticsearch.Client
 }
 
+type Diff jsondiff.Operation
+
 type SearchChangeModel struct {
-	ID          string    `json:"id"`
-	ChangeSetID string    `json:"change_set_id"`
-	ReferenceID string    `json:"reference_id"`
-	Editor      string    `json:"id"`
-	Metadata    []byte    `json:"metadata"`
-	Diffs       []byte    `json:"diffs"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	CreatedAt   time.Time `json:"created_at"`
+	Id          string                 `json:"id"`
+	ChangeSetId string                 `json:"change_set_id"`
+	SnapshotId  string                 `json:"snapshot_id"`
+	ReferenceId string                 `json:"reference_id"`
+	Editor      string                 `json:"id"`
+	Metadata    map[string]interface{} `json:"metadata"`
+	Diff        Diff                   `json:"diff"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+	CreatedAt   time.Time              `json:"created_at"`
 }
 
 func NewElasticSearchChangeRepo(client *elasticsearch.Client) domain.SearchChangeRepository {
-	return &ElasticChangeSearchRepository{client: client}
+	return &ChangeSearchRepository{client: client}
 }
 
-func (m *ElasticChangeSearchRepository) Query(id string) (snapshot domain.Change, err error) {
+func (m *ChangeSearchRepository) toDomain(doc SearchChangeModel) domain.SearchChange {
+	return domain.SearchChange{
+		Id:          doc.Id,
+		ChangeSetId: doc.ChangeSetId,
+		ReferenceId: doc.ReferenceId,
+		SnapshotId:  doc.SnapshotId,
+		Editor:      doc.Editor,
+		Metadata:    doc.Metadata,
+		Diff:        domain.Diff(doc.Diff),
+		UpdatedAt:   doc.UpdatedAt,
+		CreatedAt:   doc.CreatedAt,
+	}
+}
+
+func (m *ChangeSearchRepository) toPersistence(change domain.SearchChange) SearchChangeModel {
+	return SearchChangeModel{
+		ChangeSetId: change.ChangeSetId,
+		ReferenceId: change.ReferenceId,
+		SnapshotId:  change.SnapshotId,
+		Editor:      change.Editor,
+		Metadata:    change.Metadata,
+		Diff:        Diff(change.Diff),
+		UpdatedAt:   change.UpdatedAt,
+		CreatedAt:   change.CreatedAt,
+	}
+}
+
+func (m *ChangeSearchRepository) Query(match map[string]interface{}) ([]domain.SearchChange, error) {
 
 	var (
 		results map[string]interface{}
@@ -39,9 +76,7 @@ func (m *ElasticChangeSearchRepository) Query(id string) (snapshot domain.Change
 
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
-			"match": map[string]interface{}{
-				"title": "test",
-			},
+			"match": match,
 		},
 	}
 
@@ -51,7 +86,7 @@ func (m *ElasticChangeSearchRepository) Query(id string) (snapshot domain.Change
 
 	res, err := m.client.Search(
 		m.client.Search.WithContext(context.Background()),
-		m.client.Search.WithIndex("test"),
+		m.client.Search.WithIndex(changeIndex),
 		m.client.Search.WithBody(&buf),
 		m.client.Search.WithTrackTotalHits(true),
 		m.client.Search.WithPretty(),
@@ -87,28 +122,37 @@ func (m *ElasticChangeSearchRepository) Query(id string) (snapshot domain.Change
 		int(results["hits"].(map[string]interface{})["total"].(map[string]interface{})["value"].(float64)),
 		int(results["took"].(float64)),
 	)
+
+	var changes = make([]domain.SearchChange, len(results))
+
 	// Print the ID and document source for each hit.
 	for _, hit := range results["hits"].(map[string]interface{})["hits"].([]interface{}) {
-		log.Printf(" * ID=%s, %s", hit.(map[string]interface{})["_id"], hit.(map[string]interface{})["_source"])
+
+		var changeDoc SearchChangeModel
+		err := mapstructure.Decode(hit, &changeDoc)
+
+		if err != nil {
+			println(err)
+			continue
+		}
+
+		changes = append(changes, m.toDomain(changeDoc))
 	}
 
-	log.Println(strings.Repeat("=", 37))
-
-	return domain.Change{}, err
+	return changes, err
 }
 
-func (m *ElasticChangeSearchRepository) Create(change domain.Change) (res domain.Change, err error) {
+func (m *ChangeSearchRepository) Create(change domain.SearchChange) (domain.SearchChange, error) {
 
-	//changeDoc := &ChangeModel{
-	//	ID:                 change.ID,
-	//	ReferenceID:        change.ReferenceID,
-	//	ChangeSetID:        change.ChangeSetID,
-	//	Editor:             change.Editor,
-	//	Metadata:           change.Metadata,
-	//	Diffs:              change.Diffs,
-	//	PreviousSnapshotID: change.PreviousSnapshotID,
-	//}
-	//
-	//err = m.DB.Collection(modelName).Save(changeDoc)
-	return domain.Change{}, err
+	bytes, err := json.Marshal(m.toPersistence(change))
+
+	res, err := m.client.Index(
+		changeIndex,
+		strings.NewReader(string(bytes)),
+		m.client.Index.WithDocumentID(change.Id))
+
+	fmt.Println("Elastic Search:")
+	fmt.Println(res, err)
+
+	return change, err
 }

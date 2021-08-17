@@ -23,6 +23,9 @@ func (e *ChangeController) GetChanges(c *fiber.Ctx) error {
 
 func (e *ChangeController) SearchChanges(c *fiber.Ctx) error {
 
+	// editor
+	// field name
+
 	e.changeUseCases.SearchChange("hi")
 
 	return c.JSON(&SomeStruct{})
