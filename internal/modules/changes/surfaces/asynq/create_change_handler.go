@@ -21,32 +21,34 @@ func (e *ChangeAsynqSurface) CreateChangeHandler(ctx context.Context, t *asynq.T
 
 	err := proto.Unmarshal(t.Payload(), &payload)
 
-	var nextData map[string]interface{}
-	err = json.Unmarshal([]byte(payload.GetData()), &nextData)
+	previous := payload.GetPrevious()
+	current := payload.GetCurrent()
+
+	var previousData map[string]interface{}
+	var currentData map[string]interface{}
+
+	err = json.Unmarshal([]byte(previous.Data), &previousData)
+	err = json.Unmarshal([]byte(current.Data), &currentData)
 
 	if err != nil {
 		fmt.Printf("\nError: %s", err)
 	}
-	log.Printf("\nPayload: %s", payload.GetData())
-	log.Printf("\nDecoded: %s", nextData)
+
+	log.Printf("\nPrevious: %s", previousData)
+	log.Printf("\nCurrent: %s", currentData)
 
 	if err != nil {
 		println(err)
+		return err
 	}
-	//
-	//log.Printf("\nPrevious: %+v", payload.previous)
-	//log.Printf("\nNext: %+v", payload.next)
-	//
-	//previousBytes, err := json.Marshal(payload.previous.Data)
-	//currentBytes, err := json.Marshal(payload.next.Data)
-	//
-	//changes, err := e.changeUseCases.CreateChange(previousBytes, currentBytes)
-	//
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//log.Printf("Change %s", changes)
+
+	changes, err := e.changeUseCases.CreateChange(*current, previousData, currentData)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Change %s", changes)
 
 	return nil
 }

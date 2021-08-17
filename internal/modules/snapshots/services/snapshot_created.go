@@ -10,20 +10,29 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func SnapshotCreated(previous domain.Snapshot, next domain.Snapshot) {
+func SnapshotCreated(previous domain.Snapshot, current domain.Snapshot) {
 
 	client := infra.NewAsynqClient()
 
-	nextData, _ := json.Marshal(next.Data)
+	previousData, _ := json.Marshal(previous.Data)
+	currentData, _ := json.Marshal(current.Data)
 
-	person := &protos.SnapshotCreatedEvent{
-		Editor:      next.Editor,
-		Data:        string(nextData),
-		ReferenceId: next.ReferenceId,
-		Metadata:    "some-metadata",
+	event := &protos.SnapshotCreatedEvent{
+		Previous: &protos.Snapshot{
+			Editor:      previous.Editor,
+			Data:        string(previousData),
+			ReferenceId: previous.ReferenceId,
+			Metadata:    "",
+		},
+		Current: &protos.Snapshot{
+			Editor:      current.Editor,
+			Data:        string(currentData),
+			ReferenceId: current.ReferenceId,
+			Metadata:    "",
+		},
 	}
 
-	data, err := proto.Marshal(person)
+	data, err := proto.Marshal(event)
 
 	if data != nil {
 		println(data)

@@ -1,63 +1,52 @@
 package UseCases
 
 import (
+	"diffme.dev/diffme-api/api/protos"
 	"diffme.dev/diffme-api/internal/modules/changes"
-	SnapshotDomain "diffme.dev/diffme-api/internal/modules/snapshots"
-	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/wI2L/jsondiff"
-	"log"
+	"gopkg.in/mgo.v2/bson"
 	"time"
 )
 
-func (a *ChangeUseCases) CreateChange(oldSnapshot []byte, newSnapshot []byte) ([]domain.Change, error) {
+func (a *ChangeUseCases) CreateChange(
+	currentSnapshot protos.Snapshot,
+	previousData map[string]interface{},
+	currentData map[string]interface{},
+) ([]domain.Change, error) {
 
 	changeSetID := "change_" + uuid.New().String()
 
-	var previous SnapshotDomain.Snapshot
-	var next SnapshotDomain.Snapshot
-
-	err := json.Unmarshal(oldSnapshot, previous)
-	err = json.Unmarshal(newSnapshot, next)
-
-	//next.Data = map[string]interface{}{"name": "hello man"}
-
-	fmt.Printf("\nPrevious Data %s", previous)
-	fmt.Printf("\nNext Data %s", next.Data)
-
-	patch, err := jsondiff.Compare(previous.Data, next.Data)
+	patch, err := jsondiff.Compare(previousData, currentData)
 
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("\nJSON Patch: %s", patch)
+	newChanges := make([]domain.Change, len(patch))
 
-	changes := make([]domain.Change, len(patch))
-
-	for _, op := range patch {
-		println("------------\n")
-		log.Printf("OPERATION: %s", op)
+	for i, op := range patch {
+		fmt.Printf("Operation %s", op)
 
 		change := domain.Change{
-			Id:          next.Id,
-			Editor:      next.Editor,
-			Metadata:    next.Metadata,
-			SnapshotId:  next.Id,
-			ReferenceId: next.ReferenceId,
+			Id:          bson.NewObjectId().Hex(),
+			Editor:      currentSnapshot.Editor,
+			Metadata:    map[string]interface{}{},    // TODO:
+			SnapshotId:  currentSnapshot.ReferenceId, // TODO:
+			ReferenceId: currentSnapshot.ReferenceId,
 			ChangeSetId: changeSetID,
 			Diff:        domain.Diff(op),
 			UpdatedAt:   time.Now(),
 			CreatedAt:   time.Now(),
 		}
 
-		fmt.Printf("new change %s", change)
-
-		changes = append(changes, change)
+		newChanges[i] = change
 	}
 
-	changes, err = a.changeRepo.CreateMultiple(changes)
+	fmt.Printf("Changes (%d): %s\n\n", len(newChanges), newChanges)
+
+	changes, err := a.changeRepo.CreateMultiple(newChanges)
 
 	if err != nil {
 		println(err)
@@ -66,14 +55,13 @@ func (a *ChangeUseCases) CreateChange(oldSnapshot []byte, newSnapshot []byte) ([
 
 	// fire off event to index with elastic search...
 	for _, change := range changes {
-		_, err = a.IndexSearchableChange(change)
+		fmt.Printf("change %s", change)
+		//_, err = a.IndexSearchableChange(change)
 
 		if err != nil {
 			println(err)
 		}
-		// TODO: event driven architecture
-		//services.ChangeCreated(change)
 	}
 
-	return changes, nil
+	return newChanges, nil
 }

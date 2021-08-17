@@ -29,7 +29,11 @@ func NewMongoSnapshotRepo(DB *bongo.Connection) domain.SnapshotRepo {
 	return &SnapshotRepo{DB: DB}
 }
 
-func (m *SnapshotRepo) toDomain(doc SnapshotModel) domain.Snapshot {
+func (m *SnapshotRepo) toDomain(doc *SnapshotModel) domain.Snapshot {
+	if doc == nil {
+		return domain.Snapshot{}
+	}
+
 	return domain.Snapshot{
 		Id:          doc.Id.Hex(),
 		ReferenceId: doc.ReferenceId,
@@ -46,7 +50,7 @@ func (m *SnapshotRepo) FindByID(id string) (snapshot domain.Snapshot, err error)
 
 	err = m.DB.Collection(modelName).FindById(objectID, snapshotDoc)
 
-	return m.toDomain(*snapshotDoc), err
+	return m.toDomain(snapshotDoc), err
 
 }
 
@@ -55,17 +59,16 @@ func (m *SnapshotRepo) FindByReferenceID(referenceID string) (res domain.Snapsho
 
 	err = m.DB.Collection(modelName).FindOne(bson.M{"reference_id": referenceID}, snapshotDoc)
 
-	return m.toDomain(*snapshotDoc), err
+	return m.toDomain(snapshotDoc), err
 }
 
 func (m *SnapshotRepo) FindMostRecentByReference(referenceID string) (res domain.Snapshot, err error) {
 	snapshotDoc := &SnapshotModel{}
 
 	query := m.DB.Collection(modelName).Find(bson.M{"reference_id": referenceID})
-	err = query.Query.Sort("created_at").Limit(1).One(snapshotDoc)
+	err = query.Query.Sort("-created_at").Limit(1).One(snapshotDoc)
 
-	// TODO: how do you handle the null cases here?
-	return m.toDomain(*snapshotDoc), err
+	return m.toDomain(snapshotDoc), err
 }
 
 func (m *SnapshotRepo) FindForReference(referenceID string) (res []domain.Snapshot, err error) {
@@ -79,7 +82,7 @@ func (m *SnapshotRepo) FindForReference(referenceID string) (res []domain.Snapsh
 	for i := 0; i < page.RecordsOnPage; i++ {
 		doc := &SnapshotModel{}
 		_ = result.Next(doc)
-		snapshots[i] = m.toDomain(*doc)
+		snapshots[i] = m.toDomain(doc)
 	}
 
 	return snapshots, err
@@ -100,5 +103,5 @@ func (m *SnapshotRepo) Create(params domain.CreateSnapshotParams) (res domain.Sn
 
 	//fmt.Printf("SNAP %s", m.toDomain(*snapshotDoc))
 
-	return m.toDomain(*snapshotDoc), err
+	return m.toDomain(snapshotDoc), err
 }

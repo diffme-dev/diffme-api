@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"diffme.dev/diffme-api/api/protos"
 	"github.com/wI2L/jsondiff"
 	"time"
 )
@@ -43,7 +44,11 @@ type SearchChangeRepository interface {
 }
 
 type ChangeUseCases interface {
-	CreateChange(oldSnapshot []byte, newSnapshot []byte) ([]Change, error)
+	CreateChange(
+		currentSnapshot protos.Snapshot,
+		previousData map[string]interface{},
+		currentData map[string]interface{},
+	) ([]Change, error)
 	SearchChange(query string) ([]SearchChange, error)
 	IndexSearchableChange(change Change) (SearchChange, error)
 }

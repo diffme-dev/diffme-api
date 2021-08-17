@@ -3,9 +3,14 @@ syntax="proto3";
 option go_package = "/protos";
 package main;
 
-message SnapshotCreatedEvent {
+message Snapshot {
   string editor = 1;
   string reference_id = 2;
   string data = 3;
   string metadata = 4;
+}
+
+message SnapshotCreatedEvent {
+  Snapshot previous = 1;
+  Snapshot current = 2;
 }
