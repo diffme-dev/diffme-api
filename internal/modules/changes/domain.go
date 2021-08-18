@@ -39,7 +39,8 @@ type SearchRequest struct {
 }
 
 type ChangeRepository interface {
-	FindByID(id string) (Change, error)
+	FindById(id string) (Change, error)
+	FindByReferenceId(referenceId string) ([]Change, error)
 	Create(change Change) (Change, error)
 	CreateMultiple(change []Change) ([]Change, error)
 }

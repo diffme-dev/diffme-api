@@ -5,8 +5,5 @@ import (
 )
 
 func (a *ChangeUseCases) FetchChangeForReferenceId(referenceID string) ([]domain.Change, error) {
-
-	changes := make([]domain.Change, 5)
-
-	return changes, nil
+	return a.changeRepo.FindByReferenceId(referenceID)
 }

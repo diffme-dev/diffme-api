@@ -66,13 +66,34 @@ func (m *ChangeRepo) toPersistence(change domain.Change) ChangeModel {
 	}
 }
 
-func (m *ChangeRepo) FindByID(id string) (snapshot domain.Change, err error) {
+func (m *ChangeRepo) FindById(id string) (snapshot domain.Change, err error) {
 	objectID := bson.ObjectIdHex(id)
 	changeDoc := &ChangeModel{}
 
 	err = m.DB.Collection(modelName).FindById(objectID, changeDoc)
 
 	return m.toDomain(*changeDoc), err
+
+}
+
+func (m *ChangeRepo) FindByReferenceId(referenceId string) (snapshot []domain.Change, err error) {
+
+	result := m.DB.Collection(modelName).Find(bson.M{"reference_id": referenceId})
+	page, err := result.Paginate(10, 0)
+
+	if err != nil {
+		return []domain.Change{}, err
+	}
+
+	changes := make([]domain.Change, page.RecordsOnPage)
+
+	for i := 0; i < page.RecordsOnPage; i++ {
+		doc := &ChangeModel{}
+		_ = result.Next(doc)
+		changes[i] = m.toDomain(*doc)
+	}
+
+	return changes, err
 
 }
 
