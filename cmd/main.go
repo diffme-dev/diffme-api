@@ -3,6 +3,7 @@ package main
 import (
 	"diffme.dev/diffme-api/cmd/server"
 	"diffme.dev/diffme-api/cmd/workers"
+	"diffme.dev/diffme-api/internal/config"
 	"diffme.dev/diffme-api/internal/core/infra"
 	ChangeUseCases "diffme.dev/diffme-api/internal/modules/changes/UseCases"
 	ChangeElastic "diffme.dev/diffme-api/internal/modules/changes/infra/elasticsearch"
@@ -15,6 +16,10 @@ import (
 )
 
 func main() {
+
+	// loads the config and builds a singleton
+	config.GetConfig()
+
 	wg := new(sync.WaitGroup)
 
 	wg.Add(2)
