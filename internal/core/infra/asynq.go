@@ -1,10 +1,11 @@
 package infra
 
 import (
+	"diffme.dev/diffme-api/internal/config"
 	"github.com/hibiken/asynq"
 )
 
-const redisAddr = "127.0.0.1:6379"
+var redisAddr = config.GetConfig().RedisUri
 
 var (
 	SnapshotCreated = "SnapshotCreated"

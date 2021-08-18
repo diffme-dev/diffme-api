@@ -1,15 +1,11 @@
 package mongo
 
 import (
-	"context"
-	Infra "diffme.dev/diffme-api/internal/core/infra"
 	domain "diffme.dev/diffme-api/internal/modules/changes"
 	"fmt"
 	"github.com/go-bongo/bongo"
 	"github.com/wI2L/jsondiff"
-	"go.mongodb.org/mongo-driver/mongo"
 	"gopkg.in/mgo.v2/bson"
-	"log"
 	"time"
 )
 
@@ -125,63 +121,6 @@ func (m *ChangeRepo) CreateMultiple(changes []domain.Change) (res []domain.Chang
 		}
 
 		changeDocs[i] = changeDoc
-	}
-
-	// transform back
-	newChanges := make([]domain.Change, len(changeDocs))
-
-	for i, changeDoc := range changeDocs {
-		newChanges[i] = m.toDomain(changeDoc)
-	}
-
-	return newChanges, err
-}
-
-func (m *ChangeRepo) CreateMultipleTxn(changes []domain.Change) (res []domain.Change, err error) {
-	println("starting transaction")
-
-	changeDocs := make([]ChangeModel, len(changes))
-
-	for i, change := range changes {
-		changeDocs[i] = m.toPersistence(change)
-	}
-
-	client, err := Infra.NewMongoConnection()
-	changesCollection := client.Database("diffme").Collection(modelName)
-	session, err := client.StartSession()
-
-	defer session.EndSession(context.Background())
-
-	err = mongo.WithSession(context.Background(), session, func(sessionContext mongo.SessionContext) error {
-		if err = session.StartTransaction(); err != nil {
-			return err
-		}
-
-		for _, doc := range changeDocs {
-			_, err := changesCollection.InsertOne(
-				sessionContext,
-				doc,
-			)
-
-			if err != nil {
-				return err
-			}
-		}
-
-		if err = session.CommitTransaction(sessionContext); err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		if abortErr := session.AbortTransaction(context.Background()); abortErr != nil {
-			log.Printf("error %s", abortErr)
-			//panic(abortErr)
-		}
-		log.Printf("error %s", err)
-		//panic(err)
 	}
 
 	// transform back

@@ -11,6 +11,7 @@ import (
 	SnapshotUseCases "diffme.dev/diffme-api/internal/modules/snapshots/UseCases"
 	SnapshotMongo "diffme.dev/diffme-api/internal/modules/snapshots/infra/mongo"
 	"diffme.dev/diffme-api/internal/shared/compression"
+	"fmt"
 	"log"
 	"sync"
 )
@@ -18,7 +19,9 @@ import (
 func main() {
 
 	// loads the config and builds a singleton
-	config.GetConfig()
+	c := config.GetConfig()
+
+	fmt.Printf("Config %+v", c)
 
 	wg := new(sync.WaitGroup)
 

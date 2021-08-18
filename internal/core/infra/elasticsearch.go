@@ -1,10 +1,13 @@
 package infra
 
-import "github.com/elastic/go-elasticsearch"
+import (
+	"diffme.dev/diffme-api/internal/config"
+	"github.com/elastic/go-elasticsearch"
+)
 
 var cfg = elasticsearch.Config{
 	Addresses: []string{
-		"http://localhost:9200",
+		config.GetConfig().ElasticUri,
 	},
 }
 
