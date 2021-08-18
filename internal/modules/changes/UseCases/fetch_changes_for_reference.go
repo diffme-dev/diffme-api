@@ -4,7 +4,7 @@ import (
 	domain "diffme.dev/diffme-api/internal/modules/changes"
 )
 
-func (a *ChangeUseCases) FetchChangeForReference(referenceID string) ([]domain.Change, error) {
+func (a *ChangeUseCases) FetchChangeForReferenceId(referenceID string) ([]domain.Change, error) {
 
 	changes := make([]domain.Change, 5)
 

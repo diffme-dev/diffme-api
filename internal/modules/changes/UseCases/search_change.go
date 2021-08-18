@@ -4,9 +4,13 @@ import (
 	domain "diffme.dev/diffme-api/internal/modules/changes"
 )
 
-func (a *ChangeUseCases) SearchChange(query string) ([]domain.SearchChange, error) {
+func (a *ChangeUseCases) SearchChange(match domain.SearchRequest) ([]domain.SearchChange, error) {
 
-	changes := make([]domain.SearchChange, 5)
+	searchChanges, err := a.searchChangeRepo.Query(match)
 
-	return changes, nil
+	if err != nil {
+		return make([]domain.SearchChange, 0), err
+	}
+
+	return searchChanges, nil
 }

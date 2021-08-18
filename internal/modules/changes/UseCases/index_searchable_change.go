@@ -8,6 +8,7 @@ func (a *ChangeUseCases) IndexSearchableChange(change domain.Change) (domain.Sea
 	searchChange := domain.SearchChange{
 		ChangeSetId: change.ChangeSetId,
 		Id:          change.Id,
+		Editor:      change.Editor,
 		Diff:        change.Diff,
 		ReferenceId: change.ReferenceId,
 		SnapshotId:  change.SnapshotId,

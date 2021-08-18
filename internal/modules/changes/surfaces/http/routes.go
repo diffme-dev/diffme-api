@@ -12,7 +12,7 @@ func ChangeRoutes(f fiber.Router, changeUseCases domain.ChangeUseCases) {
 		changeUseCases: changeUseCases,
 	}
 
-	eventRoutes.Get("/", handler.GetChanges)
+	//eventRoutes.Get("/", handler.GetChanges)
 	eventRoutes.Get("/search", handler.SearchChanges)
 	eventRoutes.Get("/:id", handler.GetChangeByReferenceID)
 }

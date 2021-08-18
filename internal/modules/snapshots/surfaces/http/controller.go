@@ -14,8 +14,6 @@ type SnapshotController struct {
 func (e *SnapshotController) GetSnapshotByID(c *fiber.Ctx) error {
 	snapshotID := c.Params("id")
 
-	println("snapshot ID: ", snapshotID)
-
 	data, err := e.snapshotRepo.FindByID(snapshotID)
 
 	if err != nil {

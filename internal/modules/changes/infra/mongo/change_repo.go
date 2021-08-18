@@ -41,7 +41,7 @@ func NewMongoChangeRepo(DB *bongo.Connection) domain.ChangeRepository {
 
 func (m *ChangeRepo) toDomain(doc ChangeModel) domain.Change {
 	return domain.Change{
-		Id:          doc.Id.String(),
+		Id:          doc.Id.Hex(),
 		ChangeSetId: doc.ChangeSetId,
 		ReferenceId: doc.ReferenceId,
 		SnapshotId:  doc.SnapshotId,
@@ -92,7 +92,7 @@ func (m *ChangeRepo) CreateMultiple(changes []domain.Change) (res []domain.Chang
 
 	changeDocs := make([]ChangeModel, len(changes))
 
-	for _, change := range changes {
+	for i, change := range changes {
 
 		changeDoc := m.toPersistence(change)
 
@@ -103,14 +103,14 @@ func (m *ChangeRepo) CreateMultiple(changes []domain.Change) (res []domain.Chang
 			continue
 		}
 
-		changeDocs = append(changeDocs, changeDoc)
+		changeDocs[i] = changeDoc
 	}
 
 	// transform back
 	newChanges := make([]domain.Change, len(changeDocs))
 
-	for _, changeDoc := range changeDocs {
-		newChanges = append(newChanges, m.toDomain(changeDoc))
+	for i, changeDoc := range changeDocs {
+		newChanges[i] = m.toDomain(changeDoc)
 	}
 
 	return newChanges, err
@@ -121,8 +121,8 @@ func (m *ChangeRepo) CreateMultipleTxn(changes []domain.Change) (res []domain.Ch
 
 	changeDocs := make([]ChangeModel, len(changes))
 
-	for _, change := range changes {
-		changeDocs = append(changeDocs, m.toPersistence(change))
+	for i, change := range changes {
+		changeDocs[i] = m.toPersistence(change)
 	}
 
 	client, err := Infra.NewMongoConnection()
@@ -166,8 +166,8 @@ func (m *ChangeRepo) CreateMultipleTxn(changes []domain.Change) (res []domain.Ch
 	// transform back
 	newChanges := make([]domain.Change, len(changeDocs))
 
-	for _, changeDoc := range changeDocs {
-		newChanges = append(newChanges, m.toDomain(changeDoc))
+	for i, changeDoc := range changeDocs {
+		newChanges[i] = m.toDomain(changeDoc)
 	}
 
 	return newChanges, err

@@ -13,7 +13,7 @@ type Change struct {
 	ChangeSetId string                 `json:"change_set_id"`
 	ReferenceId string                 `json:"reference_id"`
 	SnapshotId  string                 `json:"current_snapshot_id"`
-	Editor      string                 `json:"id"`
+	Editor      string                 `json:"editor"`
 	Metadata    map[string]interface{} `json:"metadata"`
 	Diff        Diff                   `json:"diff"`
 	UpdatedAt   time.Time              `json:"updated_at"`
@@ -25,11 +25,17 @@ type SearchChange struct {
 	ChangeSetId string                 `json:"change_set_id"`
 	SnapshotId  string                 `json:"snapshot_id"`
 	ReferenceId string                 `json:"reference_id"`
-	Editor      string                 `json:"id"`
+	Editor      string                 `json:"editor"`
 	Metadata    map[string]interface{} `json:"metadata"`
 	Diff        Diff                   `json:"diff"`
 	UpdatedAt   time.Time              `json:"updated_at"`
 	CreatedAt   time.Time              `json:"created_at"`
+}
+
+type SearchRequest struct {
+	Editor *string `json:"editor",omitempty`
+	Field  *string `json:"field",omitempty`
+	Value  *string `json:"value",omitempty`
 }
 
 type ChangeRepository interface {
@@ -39,7 +45,7 @@ type ChangeRepository interface {
 }
 
 type SearchChangeRepository interface {
-	Query(match map[string]interface{}) ([]SearchChange, error)
+	Query(match SearchRequest) ([]SearchChange, error)
 	Create(change SearchChange) (SearchChange, error)
 }
 
@@ -49,6 +55,7 @@ type ChangeUseCases interface {
 		previousData map[string]interface{},
 		currentData map[string]interface{},
 	) ([]Change, error)
-	SearchChange(query string) ([]SearchChange, error)
+	SearchChange(query SearchRequest) ([]SearchChange, error)
 	IndexSearchableChange(change Change) (SearchChange, error)
+	FetchChangeForReferenceId(referenceId string) ([]Change, error)
 }

@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	domain "diffme.dev/diffme-api/internal/modules/changes"
+	"diffme.dev/diffme-api/internal/shared/encoders"
 	"encoding/json"
 	"fmt"
 	"github.com/elastic/go-elasticsearch"
-	"github.com/mitchellh/mapstructure"
+	"github.com/elastic/go-elasticsearch/esapi"
 	"github.com/wI2L/jsondiff"
 	"log"
 	"strings"
@@ -25,15 +26,15 @@ type ChangeSearchRepository struct {
 type Diff jsondiff.Operation
 
 type SearchChangeModel struct {
-	Id          string                 `json:"id"`
-	ChangeSetId string                 `json:"change_set_id"`
-	SnapshotId  string                 `json:"snapshot_id"`
-	ReferenceId string                 `json:"reference_id"`
-	Editor      string                 `json:"id"`
-	Metadata    map[string]interface{} `json:"metadata"`
-	Diff        Diff                   `json:"diff"`
-	UpdatedAt   time.Time              `json:"updated_at"`
-	CreatedAt   time.Time              `json:"created_at"`
+	Id          string                 `json:"id" mapstructure:"id"`
+	ChangeSetId string                 `json:"change_set_id" mapstructure:"change_set_id"`
+	SnapshotId  string                 `json:"snapshot_id" mapstructure:"snapshot_id"`
+	ReferenceId string                 `json:"reference_id" mapstructure:"reference_id"`
+	Editor      string                 `json:"editor" mapstructure:"editor"`
+	Metadata    map[string]interface{} `json:"metadata" mapstructure:"metadata"`
+	Diff        Diff                   `json:"diff" mapstructure:"diff"`
+	UpdatedAt   time.Time              `json:"updated_at" mapstructure:"updated_at"`
+	CreatedAt   time.Time              `json:"created_at" mapstructure:"created_at"`
 }
 
 func NewElasticSearchChangeRepo(client *elasticsearch.Client) domain.SearchChangeRepository {
@@ -56,6 +57,7 @@ func (m *ChangeSearchRepository) toDomain(doc SearchChangeModel) domain.SearchCh
 
 func (m *ChangeSearchRepository) toPersistence(change domain.SearchChange) SearchChangeModel {
 	return SearchChangeModel{
+		Id:          change.Id,
 		ChangeSetId: change.ChangeSetId,
 		ReferenceId: change.ReferenceId,
 		SnapshotId:  change.SnapshotId,
@@ -67,21 +69,55 @@ func (m *ChangeSearchRepository) toPersistence(change domain.SearchChange) Searc
 	}
 }
 
-func (m *ChangeSearchRepository) Query(match map[string]interface{}) ([]domain.SearchChange, error) {
+func (m *ChangeSearchRepository) Query(match domain.SearchRequest) ([]domain.SearchChange, error) {
 
 	var (
 		results map[string]interface{}
 		buf     bytes.Buffer
 	)
 
+	var must []interface{}
+
+	if match.Editor != nil {
+		editorMatch := map[string]interface{}{
+			"match": map[string]interface{}{
+				"editor": match.Editor,
+			},
+		}
+		must = append(must, editorMatch)
+	}
+
+	if match.Field != nil {
+		fieldMatch := map[string]interface{}{
+			"match": map[string]interface{}{
+				"diff.path": match.Field,
+			},
+		}
+		must = append(must, fieldMatch)
+	}
+
+	if match.Value != nil {
+		valueMatch := map[string]interface{}{
+			"match": map[string]interface{}{
+				"diff.value": match.Value,
+			},
+		}
+		must = append(must, valueMatch)
+	}
+
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
-			"match": match,
+			"bool": map[string]interface{}{
+				"must": must,
+			},
 		},
 	}
 
+	//str, _ := json.MarshalIndent(query, "", "  ")
+	//fmt.Printf("Elastic Query: %s\n", string(str))
+
 	if err := json.NewEncoder(&buf).Encode(query); err != nil {
-		log.Fatalf("Error encoding query: %s", err)
+		log.Printf("Error encoding query: %s", err)
 	}
 
 	res, err := m.client.Search(
@@ -93,7 +129,7 @@ func (m *ChangeSearchRepository) Query(match map[string]interface{}) ([]domain.S
 	)
 
 	if err != nil {
-		log.Fatalf("Error getting response: %s", err)
+		log.Printf("Error getting response: %s", err)
 	}
 
 	defer res.Body.Close()
@@ -101,10 +137,10 @@ func (m *ChangeSearchRepository) Query(match map[string]interface{}) ([]domain.S
 	if res.IsError() {
 		var e map[string]interface{}
 		if err := json.NewDecoder(res.Body).Decode(&e); err != nil {
-			log.Fatalf("Error parsing the response body: %s", err)
+			log.Printf("Error parsing the response body: %s", err)
 		} else {
 			// Print the response status and error information.
-			log.Fatalf("[%s] %s: %s",
+			log.Printf("[%s] %s: %s",
 				res.Status(),
 				e["error"].(map[string]interface{})["type"],
 				e["error"].(map[string]interface{})["reason"],
@@ -113,30 +149,39 @@ func (m *ChangeSearchRepository) Query(match map[string]interface{}) ([]domain.S
 	}
 
 	if err := json.NewDecoder(res.Body).Decode(&results); err != nil {
-		log.Fatalf("Error parsing the response body: %s", err)
+		log.Printf("Error parsing the response body: %s", err)
 	}
+
+	totalHits := int(results["hits"].(map[string]interface{})["total"].(map[string]interface{})["value"].(float64))
+
 	// Print the response status, number of results, and request duration.
 	log.Printf(
-		"[%s] %d hits; took: %dms",
+		"[%s] %d hits;",
 		res.Status(),
-		int(results["hits"].(map[string]interface{})["total"].(map[string]interface{})["value"].(float64)),
-		int(results["took"].(float64)),
+		totalHits,
 	)
 
-	var changes = make([]domain.SearchChange, len(results))
+	hits := results["hits"].(map[string]interface{})["hits"].([]interface{})
+
+	var changes = make([]domain.SearchChange, totalHits)
 
 	// Print the ID and document source for each hit.
-	for _, hit := range results["hits"].(map[string]interface{})["hits"].([]interface{}) {
+	for i, hit := range hits {
 
 		var changeDoc SearchChangeModel
-		err := mapstructure.Decode(hit, &changeDoc)
 
+		source := hit.(map[string]interface{})["_source"].(map[string]interface{})
+
+		//log.Printf("source %s\n\n", source)
+
+		err := encoders.Decode(source, &changeDoc)
+
+		// just return if one fails
 		if err != nil {
-			println(err)
-			continue
+			return changes, err
 		}
 
-		changes = append(changes, m.toDomain(changeDoc))
+		changes[i] = m.toDomain(changeDoc)
 	}
 
 	return changes, err
@@ -144,14 +189,24 @@ func (m *ChangeSearchRepository) Query(match map[string]interface{}) ([]domain.S
 
 func (m *ChangeSearchRepository) Create(change domain.SearchChange) (domain.SearchChange, error) {
 
-	bytes, err := json.Marshal(m.toPersistence(change))
+	doc := m.toPersistence(change)
 
-	res, err := m.client.Index(
-		changeIndex,
-		strings.NewReader(string(bytes)),
-		m.client.Index.WithDocumentID(change.Id))
+	bytes, err := json.Marshal(doc)
 
-	fmt.Println("Elastic Search:")
+	req := esapi.IndexRequest{
+		Index:      changeIndex,
+		DocumentID: change.Id,
+		Body:       strings.NewReader(string(bytes)),
+		Refresh:    "true",
+	}
+
+	// Perform the request with the client.
+	res, err := req.Do(context.Background(), m.client)
+
+	if err != nil {
+		log.Fatalf("Error getting response: %s", err)
+	}
+
 	fmt.Println(res, err)
 
 	return change, err

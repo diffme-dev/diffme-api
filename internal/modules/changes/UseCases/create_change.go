@@ -27,8 +27,6 @@ func (a *ChangeUseCases) CreateChange(
 	newChanges := make([]domain.Change, len(patch))
 
 	for i, op := range patch {
-		fmt.Printf("Operation %s", op)
-
 		change := domain.Change{
 			Id:          bson.NewObjectId().Hex(),
 			Editor:      currentSnapshot.Editor,
@@ -55,8 +53,7 @@ func (a *ChangeUseCases) CreateChange(
 
 	// fire off event to index with elastic search...
 	for _, change := range changes {
-		fmt.Printf("change %s", change)
-		//_, err = a.IndexSearchableChange(change)
+		_, err := a.IndexSearchableChange(change)
 
 		if err != nil {
 			println(err)
