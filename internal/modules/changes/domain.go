@@ -38,8 +38,16 @@ type SearchRequest struct {
 	Value  *string `json:"value",omitempty`
 }
 
+type QueryChangesRequest struct {
+	Limit  *string `json:"limit",omitempty`
+	Sort   *string `json:"sort",omitempty`
+	Before *string `json:"before",omitempty`
+	After  *string `json:"after",omitempty`
+}
+
 type ChangeRepository interface {
 	FindById(id string) (Change, error)
+	Find(query QueryChangesRequest) ([]Change, error)
 	FindByReferenceId(referenceId string) ([]Change, error)
 	Create(change Change) (Change, error)
 	CreateMultiple(change []Change) ([]Change, error)
@@ -51,6 +59,7 @@ type SearchChangeRepository interface {
 }
 
 type ChangeUseCases interface {
+	GetChanges(query QueryChangesRequest) ([]Change, error)
 	CreateChange(
 		currentSnapshot protos.Snapshot,
 		previousData map[string]interface{},

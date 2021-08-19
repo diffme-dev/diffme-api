@@ -35,38 +35,38 @@ TODO: implement a similar concept to git packfiles where snapshots are packaged 
 In typescript you could use the below code to easily generate a difference with this api.
 
 ```typescript
-    import axios from "axios"
+import axios from "axios"
 
-    const client = axios.create({
-        baseURL: "your diffme api url"
-    })
+const client = axios.create({
+    baseURL: "your diffme api url"
+})
 
-    const document = { name: "Chaga", price: 10.50, id: "1"}
+const document = { name: "Chaga", price: 10.50, id: "1"}
 
-    // creates the first snapshot
-    client.post("/v1/snapshots", {
-        reference_id: document.id,
-        data: document,
-        editor: "andrew",
-    })
+// creates the first snapshot
+client.post("/v1/snapshots", {
+    reference_id: document.id,
+    data: document,
+    editor: "andrew",
+})
 
-    // edit the documents name
-    document.name = "Chagachino"
-    
-    // this would create a diff saying the name was changed from "Chaga" to "Chagachino"
-    // by olivia
-    client.post("/v1/snapshots", {
-        reference_id: document.id,
-        data: document,
-        editor: "olivia",
-    }) 
+// edit the documents name
+document.name = "Chagachino"
 
-    // you can then easily search your documents by doing something like this...
-    client.get(`/v1/changes/{document.id}/search`, {
-        editor: "olivia", // optional
-        field: "name", // optional
-        value: "Cha", // optional
-    })
+// this would create a diff saying the name was changed from "Chaga" to "Chagachino"
+// by olivia
+client.post("/v1/snapshots", {
+    reference_id: document.id,
+    data: document,
+    editor: "olivia",
+}) 
+
+// you can then easily search your documents by doing something like this...
+client.get(`/v1/changes/{document.id}/search`, {
+    editor: "olivia", // optional
+    field: "name", // optional
+    value: "Cha", // optional
+})
 ```
 
 And that is it! It is a simple rest API to easily get diffs of documents over time.
