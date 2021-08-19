@@ -60,6 +60,13 @@ In typescript you could use the below code to easily generate a difference with 
         data: document,
         editor: "olivia",
     }) 
+
+    // you can then easily search your documents by doing something like this...
+    client.get(`/v1/{document.id}/search`, {
+        editor: "olivia", // optional
+        field: "name", // optional
+        value: "Cha", // optional
+    })
 ```
 
 And that is it! It is a simple rest API to easily get diffs of documents over time.
