@@ -62,7 +62,7 @@ In typescript you could use the below code to easily generate a difference with 
     }) 
 
     // you can then easily search your documents by doing something like this...
-    client.get(`/v1/{document.id}/search`, {
+    client.get(`/v1/changes/{document.id}/search`, {
         editor: "olivia", // optional
         field: "name", // optional
         value: "Cha", // optional
