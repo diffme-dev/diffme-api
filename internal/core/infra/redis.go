@@ -1,7 +1,7 @@
 package infra
 
 import (
-	"diffme.dev/diffme-api/internal/config"
+	"diffme.dev/diffme-api/config"
 	Redis "github.com/go-redis/redis/v8"
 )
 

@@ -28,6 +28,7 @@ func GetConfig() *Config {
 
 	once.Do(func() {
 		var config *Config
+
 		err := viper.Unmarshal(&config)
 
 		if err != nil {

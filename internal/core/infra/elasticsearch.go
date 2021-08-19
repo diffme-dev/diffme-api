@@ -1,7 +1,7 @@
 package infra
 
 import (
-	"diffme.dev/diffme-api/internal/config"
+	"diffme.dev/diffme-api/config"
 	"github.com/elastic/go-elasticsearch"
 )
 
