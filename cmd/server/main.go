@@ -2,7 +2,6 @@ package server
 
 import (
 	"diffme.dev/diffme-api/internal/core/interfaces"
-	"diffme.dev/diffme-api/internal/core/middleware"
 	ChangeDomain "diffme.dev/diffme-api/internal/modules/changes"
 	EventHTTP "diffme.dev/diffme-api/internal/modules/changes/surfaces/http"
 	SnapshotDomain "diffme.dev/diffme-api/internal/modules/snapshots"
@@ -53,10 +52,7 @@ func StartServer(deps ServerDependencies) {
 	app.Use(logger.New())
 
 	// cors
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowHeaders: "Origin, Content-Type, Accept",
-	}))
+	app.Use(cors.New())
 
 	// compress
 	app.Use(compress.New())
@@ -67,7 +63,8 @@ func StartServer(deps ServerDependencies) {
 	// request ID
 	app.Use(requestid.New())
 
-	app.Use(middleware.AuthMiddleware(deps.authProvider))
+	// TODO:
+	//app.Use(middleware.AuthMiddleware(deps.authProvider))
 
 	v1 := app.Group("/v1")
 
