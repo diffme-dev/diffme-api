@@ -3,6 +3,7 @@ module diffme.dev/diffme-api
 go 1.16
 
 require (
+	firebase.google.com/go/v4 v4.6.0 // indirect
 	github.com/0xAX/notificator v0.0.0-20210731104411-c42e3d4a43ee // indirect
 	github.com/RichardKnop/machinery v1.10.6 // indirect
 	github.com/andybalholm/brotli v1.0.3 // indirect

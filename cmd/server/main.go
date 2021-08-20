@@ -1,12 +1,19 @@
 package server
 
 import (
+	"diffme.dev/diffme-api/internal/core/interfaces"
+	"diffme.dev/diffme-api/internal/core/middleware"
 	ChangeDomain "diffme.dev/diffme-api/internal/modules/changes"
 	EventHTTP "diffme.dev/diffme-api/internal/modules/changes/surfaces/http"
 	SnapshotDomain "diffme.dev/diffme-api/internal/modules/snapshots"
 	SnapshotHTTP "diffme.dev/diffme-api/internal/modules/snapshots/surfaces/http"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cache"
+	"github.com/gofiber/fiber/v2/middleware/compress"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 )
 
 type ServerDependencies struct {
@@ -14,6 +21,8 @@ type ServerDependencies struct {
 	snapshotRepo     SnapshotDomain.SnapshotRepo
 	snapshotUseCases SnapshotDomain.SnapshotUseCases
 	searchChangeRepo ChangeDomain.SearchChangeRepository
+	producer         *kafka.Producer
+	authProvider     interfaces.AuthProvider
 }
 
 func NewServerDependencies(
@@ -21,12 +30,16 @@ func NewServerDependencies(
 	snapshotRepo SnapshotDomain.SnapshotRepo,
 	snapshotUseCases SnapshotDomain.SnapshotUseCases,
 	searchChangeRepo ChangeDomain.SearchChangeRepository,
+	producer *kafka.Producer,
+	authProvider interfaces.AuthProvider,
 ) ServerDependencies {
 	return ServerDependencies{
 		changeUseCases:   changeUseCases,
 		snapshotRepo:     snapshotRepo,
 		snapshotUseCases: snapshotUseCases,
 		searchChangeRepo: searchChangeRepo,
+		producer:         producer,
+		authProvider:     authProvider,
 	}
 }
 
@@ -35,7 +48,27 @@ func StartServer(deps ServerDependencies) {
 
 	// Fiber instance
 	app := fiber.New()
+
+	// logger
 	app.Use(logger.New())
+
+	// cors
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowHeaders: "Origin, Content-Type, Accept",
+	}))
+
+	// compress
+	app.Use(compress.New())
+
+	// cache
+	app.Use(cache.New())
+
+	// request ID
+	app.Use(requestid.New())
+
+	app.Use(middleware.AuthMiddleware(deps.authProvider))
+
 	v1 := app.Group("/v1")
 
 	addRoutes(v1, deps)
@@ -51,7 +84,8 @@ func StartServer(deps ServerDependencies) {
 	//}()
 }
 
-func addRoutes(route fiber.Router, deps ServerDependencies) {
-	EventHTTP.ChangeRoutes(route, deps.changeUseCases)
-	SnapshotHTTP.SnapshotRoutes(route, deps.snapshotRepo, deps.snapshotUseCases)
+func addRoutes(app fiber.Router, deps ServerDependencies) {
+
+	EventHTTP.ChangeRoutes(app, deps.changeUseCases)
+	SnapshotHTTP.SnapshotRoutes(app, deps.snapshotRepo, deps.snapshotUseCases)
 }

@@ -10,6 +10,7 @@ import (
 	ChangeMongo "diffme.dev/diffme-api/internal/modules/changes/infra/mongo"
 	SnapshotUseCases "diffme.dev/diffme-api/internal/modules/snapshots/UseCases"
 	SnapshotMongo "diffme.dev/diffme-api/internal/modules/snapshots/infra/mongo"
+	UserMongo "diffme.dev/diffme-api/internal/modules/users/infra/mongo"
 	"diffme.dev/diffme-api/internal/shared/compression"
 	"fmt"
 	"log"
@@ -28,8 +29,11 @@ func main() {
 	wg.Add(2)
 
 	// infra connections
+	kafkaConsumer := infra.NewKafkaConsumer()
+	kafkaProducer := infra.NewKafkaProducer()
+
 	mongoClient, err := infra.NewBongoConnection()
-	//redisClient, err := Infra.NewRedisClient()
+	_, err = infra.NewRedisClient() // TODO:
 	elasticClient, err := infra.NewElasticSearch()
 	lz4Compression := compression.NewLZ4Compression()
 
@@ -37,9 +41,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// auth provider
+	authProvider := infra.NewFirebaseProvider()
+
+	// repositories
 	searchChangeRepo := ChangeElastic.NewElasticSearchChangeRepo(elasticClient)
 	changeRepo := ChangeMongo.NewMongoChangeRepo(mongoClient)
 	snapshotRepo := SnapshotMongo.NewMongoSnapshotRepo(mongoClient)
+	userRepo := UserMongo.NewMongoUserRepo(mongoClient)
+
+	// TODO:
+	println(userRepo)
+
+	// use cases
 	changeUseCases := ChangeUseCases.NewChangeUseCase(changeRepo, searchChangeRepo)
 	snapshotUseCases := SnapshotUseCases.NewSnapshotUseCases(snapshotRepo, lz4Compression)
 
@@ -49,6 +63,7 @@ func main() {
 			snapshotRepo,
 			snapshotUseCases,
 			searchChangeRepo,
+			kafkaConsumer,
 		)
 
 		workers.StartWorkers(workerDeps)
@@ -62,6 +77,8 @@ func main() {
 			snapshotRepo,
 			snapshotUseCases,
 			searchChangeRepo,
+			kafkaProducer,
+			authProvider,
 		)
 
 		server.StartServer(serverDeps)

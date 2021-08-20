@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-var config = &kafka.ConfigMap{
+var kafkaProducerConfig = &kafka.ConfigMap{
 	"bootstrap.servers": "pkc-4nym6.us-east-1.aws.confluent.cloud:9092",
 	"security.protocol": "SASL_SSL",
 	"sasl.mechanisms":   "PLAIN",
@@ -15,7 +15,17 @@ var config = &kafka.ConfigMap{
 	"sasl.password":     "22+vy5+GeNGx0CU2IEiMy2s/tMWvQ1gBOPdBF1VJY90je0i9SfE8ACp+bupZ4EV7",
 }
 
-type OnConsume = func(message proto.Message) string
+var kafkaConsumerConfig = &kafka.ConfigMap{
+	"bootstrap.servers": "pkc-4nym6.us-east-1.aws.confluent.cloud:9092",
+	"security.protocol": "SASL_SSL",
+	"sasl.mechanisms":   "PLAIN",
+	"sasl.username":     "HJI2ZYBNYYXF673A",
+	"sasl.password":     "22+vy5+GeNGx0CU2IEiMy2s/tMWvQ1gBOPdBF1VJY90je0i9SfE8ACp+bupZ4EV7",
+	"group.id":          "myGroup",
+	"auto.offset.reset": "earliest",
+}
+
+type OnConsume = func(message proto.Message) error
 
 type KafkaClient struct {
 	TopicName string          `json:"topic"`
@@ -24,8 +34,8 @@ type KafkaClient struct {
 	OnConsume OnConsume       `json:"on_consume"`
 }
 
-func kafkaProducer() *kafka.Producer {
-	p, err := kafka.NewProducer(config)
+func NewKafkaProducer() *kafka.Producer {
+	p, err := kafka.NewProducer(kafkaProducerConfig)
 
 	if err != nil {
 		panic(err)
@@ -34,12 +44,8 @@ func kafkaProducer() *kafka.Producer {
 	return p
 }
 
-func kafkaConsumer() *kafka.Consumer {
-	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": config.Get("bootstrap.servers", ""),
-		"group.id":          "myGroup",
-		"auto.offset.reset": "earliest",
-	})
+func NewKafkaConsumer() *kafka.Consumer {
+	c, err := kafka.NewConsumer(kafkaConsumerConfig)
 
 	if err != nil {
 		panic(err)
@@ -51,11 +57,9 @@ func kafkaConsumer() *kafka.Consumer {
 func NewKafkaClient(
 	topicName string,
 	onConsume OnConsume,
+	producer *kafka.Producer,
+	consumer *kafka.Consumer,
 ) *KafkaClient {
-
-	producer := kafkaProducer()
-	consumer := kafkaConsumer()
-
 	return &KafkaClient{
 		TopicName: topicName,
 		Producer:  producer,
