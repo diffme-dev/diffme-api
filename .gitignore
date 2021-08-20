@@ -2,3 +2,4 @@
 config/app.env
 .env
 tmp
+.idea
