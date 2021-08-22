@@ -2,6 +2,7 @@ package UseCases
 
 import (
 	"diffme.dev/diffme-api/api/protos"
+	"diffme.dev/diffme-api/internal/core/interfaces"
 	"diffme.dev/diffme-api/internal/modules/changes"
 	"fmt"
 	"github.com/google/uuid"
@@ -34,7 +35,13 @@ func (a *ChangeUseCases) CreateChange(
 			SnapshotId:  currentSnapshot.ReferenceId, // TODO:
 			ReferenceId: currentSnapshot.ReferenceId,
 			ChangeSetId: changeSetID,
-			Diff:        domain.Diff(op),
+			Diff:        domain.ChangeDiff{
+				From: interfaces.StringPointer(op.From),
+				Path:    interfaces.StringPointer(op.Path),
+				Value:    op.Value,
+				OldValue: op.OldValue,
+				Type:     op.Type,
+			},
 			UpdatedAt:   time.Now(),
 			CreatedAt:   time.Now(),
 		}

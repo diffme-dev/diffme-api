@@ -18,7 +18,6 @@ import (
 )
 
 func main() {
-
 	// loads the config and builds a singleton
 	c := config.GetConfig()
 

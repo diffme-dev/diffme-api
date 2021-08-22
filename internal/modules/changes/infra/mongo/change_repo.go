@@ -1,10 +1,10 @@
 package mongo
 
 import (
+	"diffme.dev/diffme-api/internal/core/interfaces"
 	domain "diffme.dev/diffme-api/internal/modules/changes"
 	"fmt"
 	"github.com/go-bongo/bongo"
-	"github.com/wI2L/jsondiff"
 	"gopkg.in/mgo.v2/bson"
 	"time"
 )
@@ -17,7 +17,14 @@ type ChangeRepo struct {
 	DB *bongo.Connection
 }
 
-type Diff jsondiff.Operation
+type ChangeDiffModel struct {
+	Type     string      `json:"op" bson:"type"`
+	From     interfaces.StringPointer     `json:"from,omitempty" bson:"from"`
+	Path     interfaces.StringPointer     `json:"path" bson:"path"`
+	Value    interface{} `json:"value,omitempty" bson:"value"`
+	OldValue interface{} `json:"old_value,omitempty" bson:"old_value"`
+}
+
 
 type ChangeModel struct {
 	bongo.DocumentBase `bson:",inline"`
@@ -26,7 +33,7 @@ type ChangeModel struct {
 	SnapshotId         string                 `bson:"snapshot_id" json:"snapshot_id"`
 	Editor             string                 `bson:"editor" json:"editor"`
 	Metadata           map[string]interface{} `bson:"metadata" json:"metadata"`
-	Diff               Diff                   `bson:"diff" json:"diff"`
+	Diff               ChangeDiffModel                   `bson:"diff" json:"diff"`
 	UpdatedAt          time.Time              `bson:"updated_at" json:"updated_at"`
 	CreatedAt          time.Time              `bson:"created_at" json:"created_at"`
 }
@@ -43,7 +50,13 @@ func (m *ChangeRepo) toDomain(doc ChangeModel) domain.Change {
 		SnapshotId:  doc.SnapshotId,
 		Editor:      doc.Editor,
 		Metadata:    doc.Metadata,
-		Diff:        domain.Diff(doc.Diff),
+		Diff:        domain.ChangeDiff{
+			Type: doc.Diff.Type,
+			OldValue: doc.Diff.OldValue,
+			Value: doc.Diff.Value,
+			From: doc.Diff.From,
+			Path: doc.Diff.Path,
+		},
 		UpdatedAt:   doc.UpdatedAt,
 		CreatedAt:   doc.CreatedAt,
 	}
@@ -56,7 +69,13 @@ func (m *ChangeRepo) toPersistence(change domain.Change) ChangeModel {
 		SnapshotId:  change.SnapshotId,
 		Editor:      change.Editor,
 		Metadata:    change.Metadata,
-		Diff:        Diff(change.Diff),
+		Diff:        ChangeDiffModel{
+			OldValue: change.Diff.OldValue,
+			Type: change.Diff.Type,
+			Value: change.Diff.Value,
+			From: change.Diff.From,
+			Path: change.Diff.Path,
+		},
 		UpdatedAt:   change.UpdatedAt,
 		CreatedAt:   change.CreatedAt,
 	}
@@ -95,19 +114,50 @@ func (m *ChangeRepo) FindByReferenceId(referenceId string) (snapshot []domain.Ch
 
 func (m *ChangeRepo) Find(query domain.QueryChangesRequest) (snapshot []domain.Change, err error) {
 
-	result := m.DB.Collection(modelName).Find(bson.M{})
-	page, err := result.Paginate(10, 0)
+	findQuery := bson.M{}
+
+	// set before/after for the query
+	if query.Before != nil || query.After != nil {
+		idQuery := bson.M{}
+		if query.Before != nil {
+			idQuery["lt"]= query.Before
+		}
+		if query.After != nil {
+			idQuery["gte"]= query.After
+		}
+		findQuery = bson.M{
+			"_id": idQuery,
+		}
+	}
+
+	// update the limit if it is nil
+	if query.Limit == nil {
+		l := 50
+		query.Limit = &l
+	}
+
+	if query.Sort == nil {
+		f := "-created_at"
+		query.Sort = &f
+	}
+
+	fmt.Printf("Limit: %d. Sort: %s\n", *query.Limit, *query.Sort)
+
+	var changeDocs []ChangeModel
+
+	err = m.DB.Collection(modelName).Find(findQuery).Query.Limit(*query.Limit).Sort(*query.Sort).All(&changeDocs)
 
 	if err != nil {
+		fmt.Printf("Error %s\n", err)
 		return []domain.Change{}, err
 	}
 
-	changes := make([]domain.Change, page.RecordsOnPage)
+	fmt.Printf("found %d changes\n", len(changeDocs))
 
-	for i := 0; i < page.RecordsOnPage; i++ {
-		doc := &ChangeModel{}
-		_ = result.Next(doc)
-		changes[i] = m.toDomain(*doc)
+	changes := make([]domain.Change, len(changeDocs))
+
+	for i, doc := range changeDocs {
+		changes[i] = m.toDomain(doc)
 	}
 
 	return changes, err

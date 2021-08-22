@@ -24,9 +24,14 @@ func (e *ChangeController) GetChanges(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnprocessableEntity, "Invalid json.")
 	}
 
-	log.Printf("Query %+v", &query)
+	log.Printf("Query %+v", *query)
 
-	changes, err := e.changeUseCases.GetChanges(*query)
+	changes, err := e.changeUseCases.GetChanges(domain.QueryChangesRequest{
+		Limit: query.Limit,
+		Sort: query.Sort,
+		Before: query.Before,
+		After: query.After,
+	})
 
 	if err != nil {
 		return fiber.NewError(400, err.Error())

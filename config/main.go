@@ -35,7 +35,6 @@ func GetConfig() *Config {
 			fmt.Printf("Unable to decode into struct, %v", err)
 		}
 
-		log.Printf("Config %+v", config)
 		singleton = config
 	})
 

@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"diffme.dev/diffme-api/internal/modules/snapshots"
+	"diffme.dev/diffme-api/internal/shared"
 	"github.com/go-bongo/bongo"
 	"gopkg.in/mgo.v2/bson"
 	"time"
@@ -62,13 +63,30 @@ func (m *SnapshotRepo) FindByReferenceID(referenceID string) (res domain.Snapsho
 	return m.toDomain(snapshotDoc), err
 }
 
-func (m *SnapshotRepo) FindMostRecentByReference(referenceID string) (res domain.Snapshot, err error) {
+func (m *SnapshotRepo) FindMostRecentByReference(referenceId string, before *time.Time) (res domain.Snapshot, err error) {
 	snapshotDoc := &SnapshotModel{}
 
-	query := m.DB.Collection(modelName).Find(bson.M{"reference_id": referenceID})
-	err = query.Query.Sort("-created_at").Limit(1).One(snapshotDoc)
+	dbQuery := bson.M{"reference_id": referenceId}
 
-	return m.toDomain(snapshotDoc), err
+	if before != nil {
+		dbQuery["created_at"] = bson.M{
+			"$lte": before,
+		}
+	}
+
+	//shared.Logger.Infof("mongo query %+v", dbQuery)
+
+	err = m.DB.Collection(modelName).Find(dbQuery).Query.Sort("-created_at").Limit(1).One(&snapshotDoc)
+
+	if err != nil {
+		shared.GetSugarLogger().Errorf("error occured %v", err)
+
+		return domain.Snapshot{}, err
+	}
+
+	//shared.Logger.Infof("mongo result %+v", snapshotDoc)
+
+	return m.toDomain(snapshotDoc), nil
 }
 
 func (m *SnapshotRepo) FindForReference(referenceID string) (res []domain.Snapshot, err error) {

@@ -25,13 +25,13 @@ type CreateSnapshotParams struct {
 type SnapshotUseCases interface {
 	CreateSnapshot(params CreateSnapshotParams) (Snapshot, error)
 	GetSnapshotByID(id string) (Snapshot, error)
-	FindMostRecentReference(referenceID string) (Snapshot, error)
+	FindMostRecentReference(referenceId string, before *time.Time) (Snapshot, error)
 }
 
 type SnapshotRepo interface {
 	FindByID(id string) (Snapshot, error)
-	FindByReferenceID(referenceID string) (Snapshot, error)
-	FindMostRecentByReference(referenceID string) (Snapshot, error)
-	FindForReference(referenceID string) ([]Snapshot, error)
+	FindByReferenceID(referenceId string) (Snapshot, error)
+	FindMostRecentByReference(referenceId string, before *time.Time) (Snapshot, error)
+	FindForReference(referenceId string) ([]Snapshot, error)
 	Create(params CreateSnapshotParams) (Snapshot, error)
 }

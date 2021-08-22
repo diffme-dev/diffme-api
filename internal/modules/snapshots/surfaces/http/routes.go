@@ -14,6 +14,7 @@ func SnapshotRoutes(f fiber.Router, snapshotRepo domain.SnapshotRepo, snapshotUs
 		snapshotUseCases: snapshotUseCases,
 	}
 
-	snapshots.Get("/:id", controller.GetSnapshotByID)
+	snapshots.Get("/reference/:reference_id", controller.GetLatestSnapshotForReference)
+	//snapshots.Get("/:id", controller.GetSnapshotByID)
 	snapshots.Post("/", controller.CreateSnapshot)
 }

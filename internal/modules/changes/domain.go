@@ -2,11 +2,11 @@ package domain
 
 import (
 	"diffme.dev/diffme-api/api/protos"
-	"github.com/wI2L/jsondiff"
+	"diffme.dev/diffme-api/internal/core/interfaces"
 	"time"
 )
 
-type Diff jsondiff.Operation
+type ChangeDiff interfaces.DiffOperation
 
 type Change struct {
 	Id          string                 `json:"id"`
@@ -15,7 +15,7 @@ type Change struct {
 	SnapshotId  string                 `json:"current_snapshot_id"`
 	Editor      string                 `json:"editor"`
 	Metadata    map[string]interface{} `json:"metadata"`
-	Diff        Diff                   `json:"diff"`
+	Diff        ChangeDiff                   `json:"diff"`
 	UpdatedAt   time.Time              `json:"updated_at"`
 	CreatedAt   time.Time              `json:"created_at"`
 }
@@ -27,7 +27,7 @@ type SearchChange struct {
 	ReferenceId string                 `json:"reference_id"`
 	Editor      string                 `json:"editor"`
 	Metadata    map[string]interface{} `json:"metadata"`
-	Diff        Diff                   `json:"diff"`
+	Diff        ChangeDiff                   `json:"diff"`
 	UpdatedAt   time.Time              `json:"updated_at"`
 	CreatedAt   time.Time              `json:"created_at"`
 }
@@ -39,7 +39,7 @@ type SearchRequest struct {
 }
 
 type QueryChangesRequest struct {
-	Limit  *string `json:"limit",omitempty`
+	Limit  *int `json:"limit",omitempty`
 	Sort   *string `json:"sort",omitempty`
 	Before *string `json:"before",omitempty`
 	After  *string `json:"after",omitempty`

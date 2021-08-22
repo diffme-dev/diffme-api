@@ -2,8 +2,11 @@ package http
 
 import (
 	"diffme.dev/diffme-api/internal/core"
+	"diffme.dev/diffme-api/internal/core/errors"
 	"diffme.dev/diffme-api/internal/modules/snapshots"
+	"diffme.dev/diffme-api/internal/shared"
 	"github.com/gofiber/fiber/v2"
+	"time"
 )
 
 type SnapshotController struct {
@@ -19,6 +22,35 @@ func (e *SnapshotController) GetSnapshotByID(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	res := struct{ snapshot domain.Snapshot}{
+		snapshot: data,
+	}
+
+	return c.JSON(res)
+}
+
+
+func (e *SnapshotController) GetLatestSnapshotForReference(c *fiber.Ctx) error {
+	shared.GetSugarLogger().Infof("hit latest snapshot")
+
+	referenceId := c.Params("reference_id")
+	now := time.Now()
+
+	shared.GetSugarLogger().Infof("ref: %s", referenceId)
+
+	data, err := e.snapshotRepo.FindMostRecentByReference(referenceId, &now)
+
+	shared.GetSugarLogger().Infof("Data: %s", data)
+
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(&errors.ApiError{
+			Message: err.Error(),
+			StatusCode: fiber.StatusNotFound,
+		})
+	}
+
+	shared.GetSugarLogger().Infof("response from use case %+v", data)
 
 	return c.JSON(data)
 }

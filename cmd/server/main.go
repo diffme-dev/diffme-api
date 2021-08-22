@@ -8,10 +8,10 @@ import (
 	SnapshotHTTP "diffme.dev/diffme-api/internal/modules/snapshots/surfaces/http"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	FiberRecover "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 )
 
@@ -57,11 +57,14 @@ func StartServer(deps ServerDependencies) {
 	// compress
 	app.Use(compress.New())
 
-	// cache
-	app.Use(cache.New())
+	// cache TODO:
+	//app.Use(cache.New())
 
 	// request ID
 	app.Use(requestid.New())
+
+	// so that panics don't crash the server
+	app.Use(FiberRecover.New())
 
 	// TODO:
 	//app.Use(middleware.AuthMiddleware(deps.authProvider))

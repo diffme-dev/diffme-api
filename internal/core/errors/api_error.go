@@ -1,4 +1,4 @@
-package core
+package errors
 
 import "errors"
 
@@ -12,3 +12,9 @@ var (
 	// ErrBadParamInput will throw if the given request-body or params is not valid
 	ErrBadParamInput = errors.New("Given Param is not valid")
 )
+
+type ApiError struct {
+	Message string `json:"message"`
+	Data struct{} `json:"data"`
+	StatusCode int `json:"status_code"`
+}

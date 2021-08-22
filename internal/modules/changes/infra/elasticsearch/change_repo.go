@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/elastic/go-elasticsearch"
 	"github.com/elastic/go-elasticsearch/esapi"
-	"github.com/wI2L/jsondiff"
 	"log"
 	"strings"
 	"time"
@@ -23,7 +22,7 @@ type ChangeSearchRepository struct {
 	client *elasticsearch.Client
 }
 
-type Diff jsondiff.Operation
+type Diff = domain.ChangeDiff
 
 type SearchChangeModel struct {
 	Id          string                 `json:"id" mapstructure:"id"`
@@ -49,7 +48,7 @@ func (m *ChangeSearchRepository) toDomain(doc SearchChangeModel) domain.SearchCh
 		SnapshotId:  doc.SnapshotId,
 		Editor:      doc.Editor,
 		Metadata:    doc.Metadata,
-		Diff:        domain.Diff(doc.Diff),
+		Diff:        doc.Diff,
 		UpdatedAt:   doc.UpdatedAt,
 		CreatedAt:   doc.CreatedAt,
 	}
