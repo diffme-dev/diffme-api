@@ -49,6 +49,7 @@ require (
 	github.com/oleiade/reflections v1.0.1 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/prisma/prisma-client-go v0.10.0 // indirect
 	github.com/prometheus/client_golang v0.9.3 // indirect
 	github.com/soheilhy/cmux v0.1.4 // indirect
 	github.com/spf13/cast v1.4.0 // indirect

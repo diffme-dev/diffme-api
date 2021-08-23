@@ -33,9 +33,10 @@ type SearchChange struct {
 }
 
 type SearchRequest struct {
-	Editor *string `json:"editor",omitempty`
-	Field  *string `json:"field",omitempty`
-	Value  *string `json:"value",omitempty`
+	ReferenceIds *[]string `json:"reference_ids"`
+	Editor *string `json:"editor,omitempty"`
+	Field  *string `json:"field,omitempty"`
+	Value  *string `json:"value,omitempty"`
 }
 
 type QueryChangesRequest struct {

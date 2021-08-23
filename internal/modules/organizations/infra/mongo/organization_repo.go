@@ -62,7 +62,6 @@ func (m *OrganizationRepo) Create(params domain.Organization) (res domain.Organi
 	return m.toDomain(snapshotDoc), err
 }
 
-// TODO: fix this...
 func (m *OrganizationRepo) Update(userId string, params domain.Organization) (res domain.Organization, err error) {
 	snapshotDoc := &OrganizationModel{
 		Name:      params.Name,

@@ -2,6 +2,7 @@ package http
 
 import (
 	"diffme.dev/diffme-api/internal/core"
+	errors2 "diffme.dev/diffme-api/internal/core/errors"
 	domain "diffme.dev/diffme-api/internal/modules/changes"
 	"github.com/gofiber/fiber/v2"
 	"log"
@@ -60,12 +61,17 @@ func (e *ChangeController) SearchChanges(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnprocessableEntity, "Invalid json.")
 	}
 
-	log.Printf("Query %+v", &search)
+	log.Printf("Search Query: %+v", *search)
 
 	searchChanges, err := e.changeUseCases.SearchChange(*search)
 
 	if err != nil {
-		return fiber.NewError(400, err.Error())
+		apiError := errors2.ApiError{
+			Message: err.Error(),
+			StatusCode: fiber.StatusBadRequest,
+		}
+
+		return c.Status(apiError.StatusCode).JSON(apiError)
 	}
 
 	response := struct {

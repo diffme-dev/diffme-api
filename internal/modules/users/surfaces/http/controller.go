@@ -37,6 +37,9 @@ func (e *UserController) CreateUser(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnprocessableEntity, "Invalid json.")
 	}
 
+	// TODO: bunch of firebase / auth things need to go here...
+	// TODO: figure out the right abstraction
+
 	snapshot, err := e.userUseCases.CreateUser(*userParams)
 
 	if err != nil {

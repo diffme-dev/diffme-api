@@ -18,4 +18,7 @@ type OrganizationRepository interface {
 }
 
 type OrganizationUseCases interface {
+	GetOrganization(id string)  (Organization, error)
+	Update(orgId string, org Organization)  (Organization, error)
+	Create(org Organization)  (Organization, error)
 }

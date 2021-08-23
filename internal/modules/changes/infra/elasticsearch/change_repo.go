@@ -68,7 +68,9 @@ func (m *ChangeSearchRepository) toPersistence(change domain.SearchChange) Searc
 	}
 }
 
-func (m *ChangeSearchRepository) Query(match domain.SearchRequest) ([]domain.SearchChange, error) {
+func (m *ChangeSearchRepository) Query(request domain.SearchRequest) ([]domain.SearchChange, error) {
+
+	//log.Printf("Request %+v", request)
 
 	var (
 		results map[string]interface{}
@@ -76,32 +78,40 @@ func (m *ChangeSearchRepository) Query(match domain.SearchRequest) ([]domain.Sea
 	)
 
 	var must []interface{}
+	var terms []interface{}
 
-	if match.Editor != nil {
+	if request.Editor != nil {
 		editorMatch := map[string]interface{}{
 			"match": map[string]interface{}{
-				"editor": match.Editor,
+				"editor": *request.Editor,
 			},
 		}
 		must = append(must, editorMatch)
 	}
 
-	if match.Field != nil {
+	if request.Field != nil {
 		fieldMatch := map[string]interface{}{
 			"match": map[string]interface{}{
-				"diff.path": match.Field,
+				"diff.path": *request.Field,
 			},
 		}
 		must = append(must, fieldMatch)
 	}
 
-	if match.Value != nil {
+	if request.Value != nil {
 		valueMatch := map[string]interface{}{
 			"match": map[string]interface{}{
-				"diff.value": match.Value,
+				"diff.value": *request.Value,
 			},
 		}
 		must = append(must, valueMatch)
+	}
+
+	if request.ReferenceIds != nil {
+		terms = append(terms, map[string]interface{}{
+			"reference_id" : *request.ReferenceIds,
+			"minimum_should_match" : 1,
+		})
 	}
 
 	query := map[string]interface{}{
@@ -112,8 +122,14 @@ func (m *ChangeSearchRepository) Query(match domain.SearchRequest) ([]domain.Sea
 		},
 	}
 
+	if len(terms) > 0 {
+		query["filter"] = map[string]interface{}{
+			"terms":  terms,
+		}
+	}
+
 	//str, _ := json.MarshalIndent(query, "", "  ")
-	//fmt.Printf("Elastic Query: %s\n", string(str))
+	fmt.Printf("Elastic Query: %+v\n", query)
 
 	if err := json.NewEncoder(&buf).Encode(query); err != nil {
 		log.Printf("Error encoding query: %s", err)
