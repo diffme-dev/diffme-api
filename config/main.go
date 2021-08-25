@@ -8,9 +8,12 @@ import (
 )
 
 type Config struct {
-	MongoUri   string `mapstructure:"MONGODB_URI"`
-	RedisUri   string `mapstructure:"REDIS_URI"`
-	ElasticUri string `mapstructure:"ELASTIC_URI"`
+	MongoUri            string `mapstructure:"MONGODB_URI"`
+	RedisUri            string `mapstructure:"REDIS_URI"`
+	ElasticUri          string `mapstructure:"ELASTIC_URI"`
+	FirebaseProjectId   string `mapstructure:"FIREBASE_PROJECT_ID"`
+	FirebaseClientEmail string `mapstructure:"FIREBASE_CLIENT_EMAIL"`
+	FirebasePrivateKey  string `mapstructure:"FIREBASE_PRIVATE_KEY"`
 }
 
 var singleton *Config

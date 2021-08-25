@@ -1,6 +1,9 @@
 package errors
 
-import "errors"
+import (
+	"errors"
+	"github.com/gofiber/fiber/v2"
+)
 
 var (
 	// ErrInternalServerError will throw if any the Internal Server Error happen
@@ -14,7 +17,17 @@ var (
 )
 
 type ApiError struct {
-	Message string `json:"message"`
-	Data struct{} `json:"data"`
-	StatusCode int `json:"status_code"`
+	Message    string   `json:"message"`
+	Data       struct{} `json:"data"`
+	StatusCode int      `json:"status_code"`
+}
+
+func NewApiError(c *fiber.Ctx, err error, statusCode int, data struct{}) error {
+	apiError := ApiError{
+		Message:    err.Error(),
+		StatusCode: statusCode,
+		Data:       data,
+	}
+
+	return c.Status(apiError.StatusCode).JSON(apiError)
 }

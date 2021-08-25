@@ -2,13 +2,18 @@ package http
 
 import (
 	"diffme.dev/diffme-api/internal/core"
+	errors2 "diffme.dev/diffme-api/internal/core/errors"
+	"diffme.dev/diffme-api/internal/core/interfaces"
 	domain "diffme.dev/diffme-api/internal/modules/users"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"log"
 )
 
 type UserController struct {
 	userRepo     domain.UserRepository
 	userUseCases domain.UserUseCases
+	authProvider interfaces.AuthProvider
 }
 
 func (e *UserController) GetMyUser(c *fiber.Ctx) error {
@@ -25,7 +30,7 @@ func (e *UserController) GetMyUser(c *fiber.Ctx) error {
 
 func (e *UserController) CreateUser(c *fiber.Ctx) error {
 
-	userParams := new(domain.User)
+	userParams := new(domain.CreateUserParams)
 
 	if err := c.BodyParser(userParams); err != nil {
 		return err
@@ -37,14 +42,31 @@ func (e *UserController) CreateUser(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnprocessableEntity, "Invalid json.")
 	}
 
-	// TODO: bunch of firebase / auth things need to go here...
-	// TODO: figure out the right abstraction
+	log.Printf("auth provider %+v", e.authProvider)
 
-	snapshot, err := e.userUseCases.CreateUser(*userParams)
+	userAuth, err := e.authProvider.FindOrCreate(userParams.Email, interfaces.CreateUserParams{
+		Name:        userParams.Name,
+		Email:       userParams.Email,
+		Password:    userParams.Password,
+		PhoneNumber: userParams.PhoneNumber,
+	})
 
 	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		fmt.Printf("Error: %+v", err)
+		return errors2.NewApiError(c, err, fiber.StatusBadRequest, struct{}{})
 	}
 
-	return c.JSON(snapshot)
+	// update the auth on the user to be the firebase auth
+	userParams.Auth = &domain.UserAuthProvider{
+		Provider:       userAuth.Provider,
+		ProviderUserId: userAuth.ProviderUserId,
+	}
+
+	user, err := e.userUseCases.CreateUser(*userParams)
+
+	if err != nil {
+		return errors2.NewApiError(c, err, fiber.StatusBadRequest, struct{}{})
+	}
+
+	return c.JSON(user)
 }

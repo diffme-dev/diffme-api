@@ -5,23 +5,26 @@ import (
 	"diffme.dev/diffme-api/cmd/workers"
 	"diffme.dev/diffme-api/config"
 	"diffme.dev/diffme-api/internal/core/infra"
+	"diffme.dev/diffme-api/internal/modules/authentication/UseCases"
 	ChangeUseCases "diffme.dev/diffme-api/internal/modules/changes/UseCases"
 	ChangeElastic "diffme.dev/diffme-api/internal/modules/changes/infra/elasticsearch"
 	ChangeMongo "diffme.dev/diffme-api/internal/modules/changes/infra/mongo"
+	OrgUseCases "diffme.dev/diffme-api/internal/modules/organizations/UseCases"
+	OrgMongo "diffme.dev/diffme-api/internal/modules/organizations/infra/mongo"
 	SnapshotUseCases "diffme.dev/diffme-api/internal/modules/snapshots/UseCases"
 	SnapshotMongo "diffme.dev/diffme-api/internal/modules/snapshots/infra/mongo"
+	UserUseCases "diffme.dev/diffme-api/internal/modules/users/UseCases"
 	UserMongo "diffme.dev/diffme-api/internal/modules/users/infra/mongo"
 	"diffme.dev/diffme-api/internal/shared/compression"
-	"fmt"
 	"log"
 	"sync"
 )
 
 func main() {
 	// loads the config and builds a singleton
-	c := config.GetConfig()
+	config.GetConfig()
 
-	fmt.Printf("Config %+v", c)
+	//fmt.Printf("Config %+v", c)
 
 	wg := new(sync.WaitGroup)
 
@@ -48,6 +51,7 @@ func main() {
 	changeRepo := ChangeMongo.NewMongoChangeRepo(mongoClient)
 	snapshotRepo := SnapshotMongo.NewMongoSnapshotRepo(mongoClient)
 	userRepo := UserMongo.NewMongoUserRepo(mongoClient)
+	orgRepo := OrgMongo.NewMongoOrganizationRepo(mongoClient)
 
 	// TODO:
 	println(userRepo)
@@ -55,6 +59,9 @@ func main() {
 	// use cases
 	changeUseCases := ChangeUseCases.NewChangeUseCase(changeRepo, searchChangeRepo)
 	snapshotUseCases := SnapshotUseCases.NewSnapshotUseCases(snapshotRepo, lz4Compression)
+	orgUseCases := OrgUseCases.NewOrganizationUseCases(orgRepo)
+	userUseCases := UserUseCases.NewUserUseCases(userRepo)
+	authUseCases := UseCases.NewAuthenticationUseCases(userUseCases, authProvider)
 
 	go func() {
 		workerDeps := workers.NewWorkerDependencies(
@@ -73,9 +80,13 @@ func main() {
 	go func() {
 		serverDeps := server.NewServerDependencies(
 			changeUseCases,
+			orgUseCases,
 			snapshotRepo,
 			snapshotUseCases,
 			searchChangeRepo,
+			userRepo,
+			userUseCases,
+			authUseCases,
 			kafkaProducer,
 			authProvider,
 		)
