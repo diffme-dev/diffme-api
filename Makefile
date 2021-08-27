@@ -31,6 +31,9 @@ lint-prepare:
 	@echo "Installing golangci-lint"
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s latest
 
+gen-protos:
+	protoc --go_out=api api/protos/app.proto
+
 lint:
 	./bin/golangci-lint run ./...
 

@@ -15,20 +15,27 @@ func SnapshotCreated(previous domain.Snapshot, current domain.Snapshot) {
 	client := infra.NewAsynqClient()
 
 	previousData, _ := json.Marshal(previous.Data)
+	previousMetadata, _ := json.Marshal(previous.Metadata)
 	currentData, _ := json.Marshal(current.Data)
+	currentMetadata, _ := json.Marshal(current.Metadata)
 
 	event := &protos.SnapshotCreatedEvent{
+		EventName: *current.EventName,
 		Previous: &protos.Snapshot{
+			Id:          previous.Id,
+			Label:       *previous.Label,
 			Editor:      previous.Editor,
 			Data:        string(previousData),
 			ReferenceId: previous.ReferenceId,
-			Metadata:    "",
+			Metadata:    string(previousMetadata),
 		},
 		Current: &protos.Snapshot{
+			Id:          current.Id,
+			Label:       *current.Label,
 			Editor:      current.Editor,
 			Data:        string(currentData),
 			ReferenceId: current.ReferenceId,
-			Metadata:    "",
+			Metadata:    string(currentMetadata),
 		},
 	}
 

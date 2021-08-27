@@ -40,6 +40,7 @@ require (
 	github.com/hibiken/asynq v0.18.3 // indirect
 	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/jonboulle/clockwork v0.1.0 // indirect
+	github.com/kamva/mgm/v3 v3.3.1 // indirect
 	github.com/klauspost/compress v1.13.4 // indirect
 	github.com/lib/pq v1.10.2 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect

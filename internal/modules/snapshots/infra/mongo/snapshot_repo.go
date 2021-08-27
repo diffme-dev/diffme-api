@@ -14,6 +14,8 @@ var (
 
 type SnapshotModel struct {
 	bongo.DocumentBase `bson:",inline"`
+	Label              *string                `bson:"label" json:"label"`
+	EventName          *string                `bson:"event_name" json:"event_name"`
 	ReferenceId        string                 `bson:"reference_id" json:"reference_id"`
 	Data               map[string]interface{} `bson:"data" json:"data"`
 	Metadata           map[string]interface{} `bson:"metadata" json:"metadata"`
@@ -30,13 +32,15 @@ func NewMongoSnapshotRepo(DB *bongo.Connection) domain.SnapshotRepo {
 	return &SnapshotRepo{DB: DB}
 }
 
-func (m *SnapshotRepo) toDomain(doc *SnapshotModel) domain.Snapshot {
+func (m *SnapshotRepo) toDomain(doc *SnapshotModel) *domain.Snapshot {
 	if doc == nil {
-		return domain.Snapshot{}
+		return nil
 	}
 
-	return domain.Snapshot{
+	return &domain.Snapshot{
 		Id:          doc.Id.Hex(),
+		Label:       doc.Label,
+		EventName:   doc.EventName,
 		ReferenceId: doc.ReferenceId,
 		Data:        doc.Data,
 		Editor:      doc.Editor,
@@ -45,7 +49,19 @@ func (m *SnapshotRepo) toDomain(doc *SnapshotModel) domain.Snapshot {
 	}
 }
 
-func (m *SnapshotRepo) FindByID(id string) (snapshot domain.Snapshot, err error) {
+func (m *SnapshotRepo) toPersistence(doc domain.Snapshot) *SnapshotModel {
+	return &SnapshotModel{
+		Label:       doc.Label,
+		EventName:   doc.EventName,
+		ReferenceId: doc.ReferenceId,
+		Data:        doc.Data,
+		Editor:      doc.Editor,
+		UpdatedAt:   doc.UpdatedAt,
+		CreatedAt:   doc.CreatedAt,
+	}
+}
+
+func (m *SnapshotRepo) FindByID(id string) (snapshot *domain.Snapshot, err error) {
 	objectID := bson.ObjectIdHex(id)
 	snapshotDoc := &SnapshotModel{}
 
@@ -55,15 +71,15 @@ func (m *SnapshotRepo) FindByID(id string) (snapshot domain.Snapshot, err error)
 
 }
 
-func (m *SnapshotRepo) FindByReferenceID(referenceID string) (res domain.Snapshot, err error) {
+func (m *SnapshotRepo) FindByReferenceID(referenceID string) (*domain.Snapshot, error) {
 	snapshotDoc := &SnapshotModel{}
 
-	err = m.DB.Collection(modelName).FindOne(bson.M{"reference_id": referenceID}, snapshotDoc)
+	err := m.DB.Collection(modelName).FindOne(bson.M{"reference_id": referenceID}, snapshotDoc)
 
 	return m.toDomain(snapshotDoc), err
 }
 
-func (m *SnapshotRepo) FindMostRecentByReference(referenceId string, before *time.Time) (res domain.Snapshot, err error) {
+func (m *SnapshotRepo) FindMostRecentByReference(referenceId string, before *time.Time) (*domain.Snapshot, error) {
 	snapshotDoc := &SnapshotModel{}
 
 	dbQuery := bson.M{"reference_id": referenceId}
@@ -76,12 +92,12 @@ func (m *SnapshotRepo) FindMostRecentByReference(referenceId string, before *tim
 
 	//shared.Logger.Infof("mongo query %+v", dbQuery)
 
-	err = m.DB.Collection(modelName).Find(dbQuery).Query.Sort("-created_at").Limit(1).One(&snapshotDoc)
+	err := m.DB.Collection(modelName).Find(dbQuery).Query.Sort("-created_at").Limit(1).One(&snapshotDoc)
 
 	if err != nil {
 		shared.GetSugarLogger().Errorf("error occured %v", err)
 
-		return domain.Snapshot{}, err
+		return nil, err
 	}
 
 	//shared.Logger.Infof("mongo result %+v", snapshotDoc)
@@ -100,26 +116,26 @@ func (m *SnapshotRepo) FindForReference(referenceID string) (res []domain.Snapsh
 	for i := 0; i < page.RecordsOnPage; i++ {
 		doc := &SnapshotModel{}
 		_ = result.Next(doc)
-		snapshots[i] = m.toDomain(doc)
+		snapshots[i] = *m.toDomain(doc)
 	}
 
 	return snapshots, err
 }
 
-func (m *SnapshotRepo) Create(params domain.CreateSnapshotParams) (res domain.Snapshot, err error) {
+func (m *SnapshotRepo) Create(params domain.CreateSnapshotParams) (*domain.Snapshot, error) {
 
-	snapshotDoc := &SnapshotModel{
+	snapshotDoc := m.toPersistence(domain.Snapshot{
 		ReferenceId: params.Id,
+		Label:       params.Label,
+		EventName:   params.EventName,
 		Data:        params.Data,
 		Metadata:    params.Metadata,
 		Editor:      params.Editor,
 		UpdatedAt:   time.Now(),
 		CreatedAt:   params.CreatedAt,
-	}
+	})
 
-	err = m.DB.Collection(modelName).Save(snapshotDoc)
-
-	//fmt.Printf("SNAP %s", m.toDomain(*snapshotDoc))
+	err := m.DB.Collection(modelName).Save(snapshotDoc)
 
 	return m.toDomain(snapshotDoc), err
 }

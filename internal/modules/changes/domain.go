@@ -10,12 +10,14 @@ type ChangeDiff interfaces.DiffOperation
 
 type Change struct {
 	Id          string                 `json:"id"`
+	Label       *string                `json:"label"`
+	EventName   *string                `json:"event_name"`
 	ChangeSetId string                 `json:"change_set_id"`
 	ReferenceId string                 `json:"reference_id"`
 	SnapshotId  string                 `json:"current_snapshot_id"`
 	Editor      string                 `json:"editor"`
 	Metadata    map[string]interface{} `json:"metadata"`
-	Diff        ChangeDiff                   `json:"diff"`
+	Diff        ChangeDiff             `json:"diff"`
 	UpdatedAt   time.Time              `json:"updated_at"`
 	CreatedAt   time.Time              `json:"created_at"`
 }
@@ -27,20 +29,20 @@ type SearchChange struct {
 	ReferenceId string                 `json:"reference_id"`
 	Editor      string                 `json:"editor"`
 	Metadata    map[string]interface{} `json:"metadata"`
-	Diff        ChangeDiff                   `json:"diff"`
+	Diff        ChangeDiff             `json:"diff"`
 	UpdatedAt   time.Time              `json:"updated_at"`
 	CreatedAt   time.Time              `json:"created_at"`
 }
 
 type SearchRequest struct {
 	ReferenceIds *[]string `json:"reference_ids"`
-	Editor *string `json:"editor,omitempty"`
-	Field  *string `json:"field,omitempty"`
-	Value  *string `json:"value,omitempty"`
+	Editor       *string   `json:"editor,omitempty"`
+	Field        *string   `json:"field,omitempty"`
+	Value        *string   `json:"value,omitempty"`
 }
 
 type QueryChangesRequest struct {
-	Limit  *int `json:"limit",omitempty`
+	Limit  *int    `json:"limit",omitempty`
 	Sort   *string `json:"sort",omitempty`
 	Before *string `json:"before",omitempty`
 	After  *string `json:"after",omitempty`
@@ -62,6 +64,7 @@ type SearchChangeRepository interface {
 type ChangeUseCases interface {
 	GetChanges(query QueryChangesRequest) ([]Change, error)
 	CreateChange(
+		eventName string,
 		currentSnapshot protos.Snapshot,
 		previousData map[string]interface{},
 		currentData map[string]interface{},

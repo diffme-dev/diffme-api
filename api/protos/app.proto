@@ -1,0 +1,21 @@
+syntax="proto3";
+
+option go_package = "/protos";
+
+package app;
+
+message Snapshot {
+  string Id = 1;
+  string editor = 2;
+  string reference_id = 3;
+  string data = 4;
+  string metadata = 5;
+  string label = 6;
+}
+
+message SnapshotCreatedEvent {
+  Snapshot previous = 1;
+  Snapshot current = 2;
+  string event_name = 3;
+  string label = 4;
+}

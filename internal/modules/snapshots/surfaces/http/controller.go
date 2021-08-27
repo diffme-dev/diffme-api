@@ -23,13 +23,8 @@ func (e *SnapshotController) GetSnapshotByID(c *fiber.Ctx) error {
 		return err
 	}
 
-	res := struct{ snapshot domain.Snapshot}{
-		snapshot: data,
-	}
-
-	return c.JSON(res)
+	return c.JSON(data)
 }
-
 
 func (e *SnapshotController) GetLatestSnapshotForReference(c *fiber.Ctx) error {
 	shared.GetSugarLogger().Infof("hit latest snapshot")
@@ -41,11 +36,11 @@ func (e *SnapshotController) GetLatestSnapshotForReference(c *fiber.Ctx) error {
 
 	data, err := e.snapshotRepo.FindMostRecentByReference(referenceId, &now)
 
-	shared.GetSugarLogger().Infof("Data: %s", data)
+	shared.GetSugarLogger().Infof("\nData: %+v", data)
 
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(&errors.ApiError{
-			Message: err.Error(),
+			Message:    err.Error(),
 			StatusCode: fiber.StatusNotFound,
 		})
 	}

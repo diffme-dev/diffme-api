@@ -5,16 +5,16 @@ import (
 	"diffme.dev/diffme-api/cmd/workers"
 	"diffme.dev/diffme-api/config"
 	"diffme.dev/diffme-api/internal/core/infra"
-	"diffme.dev/diffme-api/internal/modules/authentication/UseCases"
-	ChangeUseCases "diffme.dev/diffme-api/internal/modules/changes/UseCases"
+	"diffme.dev/diffme-api/internal/modules/authentication/use-cases"
 	ChangeElastic "diffme.dev/diffme-api/internal/modules/changes/infra/elasticsearch"
 	ChangeMongo "diffme.dev/diffme-api/internal/modules/changes/infra/mongo"
+	ChangeUseCases "diffme.dev/diffme-api/internal/modules/changes/use-cases"
 	OrgUseCases "diffme.dev/diffme-api/internal/modules/organizations/UseCases"
 	OrgMongo "diffme.dev/diffme-api/internal/modules/organizations/infra/mongo"
-	SnapshotUseCases "diffme.dev/diffme-api/internal/modules/snapshots/UseCases"
 	SnapshotMongo "diffme.dev/diffme-api/internal/modules/snapshots/infra/mongo"
-	UserUseCases "diffme.dev/diffme-api/internal/modules/users/UseCases"
+	SnapshotUseCases "diffme.dev/diffme-api/internal/modules/snapshots/use-cases"
 	UserMongo "diffme.dev/diffme-api/internal/modules/users/infra/mongo"
+	UserUseCases "diffme.dev/diffme-api/internal/modules/users/use-cases"
 	"diffme.dev/diffme-api/internal/shared/compression"
 	"log"
 	"sync"
@@ -61,7 +61,7 @@ func main() {
 	snapshotUseCases := SnapshotUseCases.NewSnapshotUseCases(snapshotRepo, lz4Compression)
 	orgUseCases := OrgUseCases.NewOrganizationUseCases(orgRepo)
 	userUseCases := UserUseCases.NewUserUseCases(userRepo)
-	authUseCases := UseCases.NewAuthenticationUseCases(userUseCases, authProvider)
+	authUseCases := use_cases.NewAuthenticationUseCases(userUseCases, authProvider)
 
 	go func() {
 		workerDeps := workers.NewWorkerDependencies(

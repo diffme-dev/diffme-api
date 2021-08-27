@@ -18,22 +18,23 @@ type ChangeRepo struct {
 }
 
 type ChangeDiffModel struct {
-	Type     string      `json:"op" bson:"type"`
-	From     interfaces.StringPointer     `json:"from,omitempty" bson:"from"`
-	Path     interfaces.StringPointer     `json:"path" bson:"path"`
-	Value    interface{} `json:"value,omitempty" bson:"value"`
-	OldValue interface{} `json:"old_value,omitempty" bson:"old_value"`
+	Type     string                   `json:"op" bson:"type"`
+	From     interfaces.StringPointer `json:"from,omitempty" bson:"from"`
+	Path     interfaces.StringPointer `json:"path" bson:"path"`
+	Value    interface{}              `json:"value,omitempty" bson:"value"`
+	OldValue interface{}              `json:"old_value,omitempty" bson:"old_value"`
 }
-
 
 type ChangeModel struct {
 	bongo.DocumentBase `bson:",inline"`
+	Label              *string                `bson:"label" json:"label"`
+	EventName          *string                `bson:"event_name" json:"event_name"`
 	ChangeSetId        string                 `bson:"change_set_id" json:"change_set_id"`
 	ReferenceId        string                 `bson:"reference_id" json:"reference_id"`
 	SnapshotId         string                 `bson:"snapshot_id" json:"snapshot_id"`
 	Editor             string                 `bson:"editor" json:"editor"`
 	Metadata           map[string]interface{} `bson:"metadata" json:"metadata"`
-	Diff               ChangeDiffModel                   `bson:"diff" json:"diff"`
+	Diff               ChangeDiffModel        `bson:"diff" json:"diff"`
 	UpdatedAt          time.Time              `bson:"updated_at" json:"updated_at"`
 	CreatedAt          time.Time              `bson:"created_at" json:"created_at"`
 }
@@ -45,39 +46,43 @@ func NewMongoChangeRepo(DB *bongo.Connection) domain.ChangeRepository {
 func (m *ChangeRepo) toDomain(doc ChangeModel) domain.Change {
 	return domain.Change{
 		Id:          doc.Id.Hex(),
+		Label:       doc.Label,
+		EventName:   doc.EventName,
 		ChangeSetId: doc.ChangeSetId,
 		ReferenceId: doc.ReferenceId,
 		SnapshotId:  doc.SnapshotId,
 		Editor:      doc.Editor,
 		Metadata:    doc.Metadata,
-		Diff:        domain.ChangeDiff{
-			Type: doc.Diff.Type,
+		Diff: domain.ChangeDiff{
+			Type:     doc.Diff.Type,
 			OldValue: doc.Diff.OldValue,
-			Value: doc.Diff.Value,
-			From: doc.Diff.From,
-			Path: doc.Diff.Path,
+			Value:    doc.Diff.Value,
+			From:     doc.Diff.From,
+			Path:     doc.Diff.Path,
 		},
-		UpdatedAt:   doc.UpdatedAt,
-		CreatedAt:   doc.CreatedAt,
+		UpdatedAt: doc.UpdatedAt,
+		CreatedAt: doc.CreatedAt,
 	}
 }
 
 func (m *ChangeRepo) toPersistence(change domain.Change) ChangeModel {
 	return ChangeModel{
+		Label:       change.Label,
+		EventName:   change.EventName,
 		ChangeSetId: change.ChangeSetId,
 		ReferenceId: change.ReferenceId,
 		SnapshotId:  change.SnapshotId,
 		Editor:      change.Editor,
 		Metadata:    change.Metadata,
-		Diff:        ChangeDiffModel{
+		Diff: ChangeDiffModel{
 			OldValue: change.Diff.OldValue,
-			Type: change.Diff.Type,
-			Value: change.Diff.Value,
-			From: change.Diff.From,
-			Path: change.Diff.Path,
+			Type:     change.Diff.Type,
+			Value:    change.Diff.Value,
+			From:     change.Diff.From,
+			Path:     change.Diff.Path,
 		},
-		UpdatedAt:   change.UpdatedAt,
-		CreatedAt:   change.CreatedAt,
+		UpdatedAt: change.UpdatedAt,
+		CreatedAt: change.CreatedAt,
 	}
 }
 
@@ -120,10 +125,10 @@ func (m *ChangeRepo) Find(query domain.QueryChangesRequest) (snapshot []domain.C
 	if query.Before != nil || query.After != nil {
 		idQuery := bson.M{}
 		if query.Before != nil {
-			idQuery["lt"]= query.Before
+			idQuery["lt"] = query.Before
 		}
 		if query.After != nil {
-			idQuery["gte"]= query.After
+			idQuery["gte"] = query.After
 		}
 		findQuery = bson.M{
 			"_id": idQuery,

@@ -42,7 +42,12 @@ func (e *ChangeAsynqSurface) CreateChangeHandler(ctx context.Context, t *asynq.T
 		return err
 	}
 
-	changes, err := e.changeUseCases.CreateChange(*current, previousData, currentData)
+	changes, err := e.changeUseCases.CreateChange(
+		payload.EventName,
+		*current,
+		previousData,
+		currentData,
+	)
 
 	if err != nil {
 		return err
