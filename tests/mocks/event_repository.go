@@ -2,7 +2,7 @@ package mocks
 
 import (
 	context "context"
-	"diffme.dev/diffme-api/internal/modules/changes"
+	"diffme.dev/diffme-api/server/modules/changes"
 )
 import mock "github.com/stretchr/testify/mock"
 
@@ -12,7 +12,7 @@ type ArticleRepository struct {
 }
 
 // Fetch provides a mock function with given fields: ctx, cursor, num
-func (_m *ArticleRepository) Fetch(ctx context.Context, cursor string, num int64) ([]domain.Change, string, error) {
+func (_m *ArticleRepository) Fetch(ctx context.Context, cursor string, num int64) ([]domain.domain, string, error) {
 	ret := _m.Called(ctx, cursor, num)
 
 	var r0 []domain.Change

@@ -2,7 +2,7 @@ package mocks
 
 import (
 	"context"
-	"diffme.dev/diffme-api/internal/modules/changes"
+	"diffme.dev/diffme-api/server/modules/changes"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -26,7 +26,7 @@ func (_m *ArticleUsecase) Delete(ctx context.Context, id int64) error {
 }
 
 // Fetch provides a mock function with given fields: ctx, cursor, num
-func (_m *ArticleUsecase) Fetch(ctx context.Context, cursor string, num int64) ([]domain.Change, string, error) {
+func (_m *ArticleUsecase) Fetch(ctx context.Context, cursor string, num int64) ([]domain.domain, string, error) {
 	ret := _m.Called(ctx, cursor, num)
 
 	var r0 []domain.Change

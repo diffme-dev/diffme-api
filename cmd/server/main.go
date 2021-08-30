@@ -1,23 +1,27 @@
 package server
 
 import (
-	"diffme.dev/diffme-api/internal/core/interfaces"
-	AuthDomain "diffme.dev/diffme-api/internal/modules/authentication"
-	AuthenticationHTTP "diffme.dev/diffme-api/internal/modules/authentication/surfaces/http"
-	ChangeDomain "diffme.dev/diffme-api/internal/modules/changes"
-	EventHTTP "diffme.dev/diffme-api/internal/modules/changes/surfaces/http"
-	OrgDomain "diffme.dev/diffme-api/internal/modules/organizations"
-	OrganizationHTTP "diffme.dev/diffme-api/internal/modules/organizations/surfaces/http"
-	SnapshotDomain "diffme.dev/diffme-api/internal/modules/snapshots"
-	SnapshotHTTP "diffme.dev/diffme-api/internal/modules/snapshots/surfaces/http"
-	UserDomain "diffme.dev/diffme-api/internal/modules/users"
-	UserHTTP "diffme.dev/diffme-api/internal/modules/users/surfaces/http"
+	"diffme.dev/diffme-api/server/core/interfaces"
+	"diffme.dev/diffme-api/server/core/middleware"
+	ApiKeyDomain "diffme.dev/diffme-api/server/modules/api-keys"
+	ApiKeysHTTP "diffme.dev/diffme-api/server/modules/api-keys/surfaces/http"
+	AuthDomain "diffme.dev/diffme-api/server/modules/authentication"
+	AuthenticationHTTP "diffme.dev/diffme-api/server/modules/authentication/surfaces/http"
+	ChangeDomain "diffme.dev/diffme-api/server/modules/changes"
+	EventHTTP "diffme.dev/diffme-api/server/modules/changes/surfaces/http"
+	OrgDomain "diffme.dev/diffme-api/server/modules/organizations"
+	OrganizationHTTP "diffme.dev/diffme-api/server/modules/organizations/surfaces/http"
+	SnapshotDomain "diffme.dev/diffme-api/server/modules/snapshots"
+	SnapshotHTTP "diffme.dev/diffme-api/server/modules/snapshots/surfaces/http"
+	TeamMembersHTTP "diffme.dev/diffme-api/server/modules/team-members/surfaces/http"
+	UserDomain "diffme.dev/diffme-api/server/modules/users"
+	UserHTTP "diffme.dev/diffme-api/server/modules/users/surfaces/http"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	//FiberRecover "github.com/gofiber/fiber/v2/middleware/recover"
+	FiberRecover "github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 )
 
@@ -32,6 +36,7 @@ type ServerDependencies struct {
 	authUseCases     AuthDomain.UseCases
 	producer         *kafka.Producer
 	authProvider     interfaces.AuthProvider
+	apiKeyRepo       ApiKeyDomain.ApiKeyRepository
 }
 
 func NewServerDependencies(
@@ -45,6 +50,7 @@ func NewServerDependencies(
 	authUseCases AuthDomain.UseCases,
 	producer *kafka.Producer,
 	authProvider interfaces.AuthProvider,
+	apiKeyRepo ApiKeyDomain.ApiKeyRepository,
 ) ServerDependencies {
 	return ServerDependencies{
 		changeUseCases:   changeUseCases,
@@ -57,6 +63,7 @@ func NewServerDependencies(
 		producer:         producer,
 		authProvider:     authProvider,
 		authUseCases:     authUseCases,
+		apiKeyRepo:       apiKeyRepo,
 	}
 }
 
@@ -82,10 +89,9 @@ func StartServer(deps ServerDependencies) {
 	app.Use(requestid.New())
 
 	// so that panics don't crash the server
-	//app.Use(FiberRecover.New())
+	app.Use(FiberRecover.New())
 
-	// TODO:
-	//app.Use(middleware.AuthMiddleware(deps.authProvider))
+	app.Use(middleware.AuthMiddleware(deps.authProvider, deps.userRepo, deps.apiKeyRepo))
 
 	v1 := app.Group("/v1")
 
@@ -103,6 +109,8 @@ func StartServer(deps ServerDependencies) {
 }
 
 func addRoutes(app fiber.Router, deps ServerDependencies) {
+	ApiKeysHTTP.ApiKeyRoutes(app, nil) // TODO:
+	TeamMembersHTTP.TeamMemberRoutes(app)
 	AuthenticationHTTP.AuthenticationRoutes(app, deps.authUseCases)
 	UserHTTP.UserRoutes(app, deps.userRepo, deps.userUseCases, deps.authProvider)
 	EventHTTP.ChangeRoutes(app, deps.changeUseCases)
